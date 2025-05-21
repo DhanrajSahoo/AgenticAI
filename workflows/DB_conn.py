@@ -4,7 +4,6 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.dialects.postgresql import UUID
 
 
-
 # PostgreSQL Database Configuration
 DATABASE_URL = "postgresql://postgres:12345@localhost/postgres"  # Replace with your actual database URL
 engine = create_engine(DATABASE_URL)
@@ -23,16 +22,15 @@ class Workflow(Base):
     )
 
 class Tool(Base):
-    __tablename__ = "Tool"
+    __tablename__ = "Tools"
     tool_id = Column(Text, primary_key=True)
-    tool_name = Column(String, nullable=False)
+    tool_name = Column(Text, nullable=False)
     tool_description = Column(Text)
     parameters = Column(JSON)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(
         TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now()
     )
-
 
 
 def get_db():
