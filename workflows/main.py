@@ -59,6 +59,11 @@ class WorkflowResponse(WorkflowBase):
     created_at: datetime.datetime
     updated_at: datetime.datetime
 
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the Workflow and Tools api"}
+
 #--------------------TOOLS CRUD--------------------------
 @app.post("/tools/", response_model=ToolResponse, status_code=201)
 def create_tool(tool_data: ToolCreate, db: Session = Depends(get_db)):
