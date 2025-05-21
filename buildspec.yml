@@ -3,19 +3,21 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo Logging into ECR...
-      - $(aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin <your-account-id>.dkr.ecr.$AWS_REGION.amazonaws.com)
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - $(aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 342640191734.dkr.ecr.us-east-1.amazonaws.com)
       - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - REPOSITORY_URI=<your-account-id>.dkr.ecr.$AWS_REGION.amazonaws.com/agenticai
+      - REPOSITORY_URI=342640191734.dkr.ecr.us-east-1.amazonaws.com/agenticai
   build:
     commands:
-      - echo Build started
+      - echo Building the Docker image...
       - docker build -t $REPOSITORY_URI:$IMAGE_TAG .
       - docker push $REPOSITORY_URI:$IMAGE_TAG
   post_build:
     commands:
-      - echo Writing image definitions...
+      - echo Writing imagedefinitions.json...
       - printf '[{"name":"agenticai-container","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+
 artifacts:
   files:
     - imagedefinitions.json
