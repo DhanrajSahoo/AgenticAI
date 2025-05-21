@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 
 app = FastAPI()
-# workflow_dummy = {}
+
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -60,7 +60,24 @@ class WorkflowResponse(WorkflowBase):
     updated_at: datetime.datetime
 
 #--------------------TOOLS CRUD--------------------------
+@app.post("/tools/", response_model=ToolResponse, status_code=201)
+def create_tool(tool_data: ToolCreate, db: Session = Depends(get_db)):
+    """
+    Create a new tool and store its definition, including parameters, in the database.
+    """
+    tool_id = str(uuid.uuid4()) # Generate UUID for the tool
+    
 
+    db_tool = Tool(
+        tool_id=tool_id,
+        tool_name=tool_data.tool_name,
+        tool_description=tool_data.tool_description,
+        parameters=tool_data.parameters # Store the parameters dictionary directly
+    )
+    db.add(db_tool)
+    db.commit()
+    db.refresh(db_tool)
+    return db_tool.tool_name
 
 @app.get("/tools/{tool_id}", response_model=ToolResponse)
 def read_tool(tool_id: str, db: Session = Depends(get_db)):
@@ -80,6 +97,21 @@ def read_tools(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     db_tools = db.query(Tool).offset(skip).limit(limit).all()
     return db_tools
 
+@app.put("/tools/{tool_id}", response_model=ToolResponse)
+def update_tool(
+    tool_id: str, tool: ToolUpdate, db: Session = Depends(get_db)
+):
+    """
+    Update a tool by its ID.
+    """
+    db_tool = db.query(Tool).filter(Tool.tool_id == tool_id).first()
+    if not db_tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+    for key, value in tool.dict().items():
+        setattr(db_tool, key, value)
+    db.commit()
+    db.refresh(db_tool)
+    return db_tool
 
 @app.delete("/tools/{tool_id}", response_model=dict)
 def delete_tool(tool_id: str, db: Session = Depends(get_db)
