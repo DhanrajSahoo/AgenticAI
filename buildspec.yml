@@ -3,13 +3,8 @@ version: 0.2
 phases:
   install:
     commands:
-      - set -e
-      - echo Installing Docker and starting Docker daemon...
-      - yum update -y
-      - yum install -y docker
-      - service docker start
-      - timeout 15 sh -c "until docker info; do echo '.'; sleep 1; done"
-      
+      - echo Using CodeBuild standard image with Docker pre-installed
+
   pre_build:
     commands:
       - set -e
@@ -20,7 +15,7 @@ phases:
       - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 342640191734.dkr.ecr.us-east-1.amazonaws.com
       - export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - export REPOSITORY_URI=342640191734.dkr.ecr.us-east-1.amazonaws.com/agenticai
-      
+
   build:
     commands:
       - set -e
