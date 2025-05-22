@@ -24,7 +24,7 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 COPY . .
 
 # Expose the app port
-EXPOSE 3000
+EXPOSE 80
 
 # Start the FastAPI app using Uvicorn
-CMD ["uvicorn", "workflows.main:app", "--host", "0.0.0.0", "--port", "3000", "--reload"]
+CMD ["uvicorn", "workflows.main:app", "--host", "0.0.0.0", "--port", "80", "--reload"]
