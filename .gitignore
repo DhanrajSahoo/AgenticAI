@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *.class
 .idea
+.idea/*
 
 # Virtual environment
 venv/
