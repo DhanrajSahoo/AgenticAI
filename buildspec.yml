@@ -3,32 +3,35 @@ version: 0.2
 phases:
   install:
     commands:
-      - echo Installing Docker...
+      - set -e
+      - echo Installing Docker and starting Docker daemon...
       - yum update -y
       - yum install -y docker
       - service docker start
-      - echo Starting Docker daemon...
-      - nohup /usr/local/bin/dockerd-entrypoint.sh &
-      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
-
+      - timeout 15 sh -c "until docker info; do echo '.'; sleep 1; done"
+      
   pre_build:
     commands:
+      - set -e
       - echo Checking Docker installation...
       - docker --version
       - docker info
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 342640191734.dkr.ecr.us-east-1.amazonaws.com
-      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - REPOSITORY_URI=342640191734.dkr.ecr.us-east-1.amazonaws.com/agenticai
-
+      - export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - export REPOSITORY_URI=342640191734.dkr.ecr.us-east-1.amazonaws.com/agenticai
+      
   build:
     commands:
+      - set -e
       - echo Building the Docker image...
       - docker build -t $REPOSITORY_URI:$IMAGE_TAG .
+      - echo Pushing the Docker image to ECR...
       - docker push $REPOSITORY_URI:$IMAGE_TAG
 
   post_build:
     commands:
+      - set -e
       - echo Writing imagedefinitions.json...
       - printf '[{"name":"agenticai-container","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 
