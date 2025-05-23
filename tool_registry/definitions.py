@@ -1,4 +1,4 @@
-from crewai_tools import SerperDevTool, ScrapeWebsiteTool, GithubSearchTool # Example
+from crewai_tools import SerperDevTool, ScrapeWebsiteTool, GithubSearchTool
 from tool_registry.tools.AudioRecorder import VoiceRecorderTool
 from tool_registry.tools.EmailSenderTool import EmailSenderTool
 from tool_registry.tools.EvaluateSummarization import EvaluateSummaryTool
@@ -35,36 +35,25 @@ PREDEFINED_TOOLS_CONFIG = {
                 "required": False,
                 "description": "Specific repository to search within. If not set, searches all GitHub."
             },
-            "gh_token": {
-                "type": "text",
-                "label": "GitHub Token",
-                "required": False,
-                "description": "Personal access token. Recommended to set GITHUB_TOKEN environment variable instead."
-            },
-            "content_types": {
-                "type": "text",
-                "label": "Content Types",
-                "required": False,
-                "default": "code,issues,pr",
-                "description": "Comma-separated list of content types to search (code, issues, pr, users, etc.)."
-            }
         }
     },
-    "audio_recorder_tool": {
-        "name": "Audio Record",
-        "description": "Tool for recording the audio.",
+
+    # Custom Tools
+    "VoiceRecorderTool": { 
+        "name": "Voice Recorder", 
+        "description": "Tool for recording audio from the microphone.",
         "class": VoiceRecorderTool,
         "parameters_schema": {
             "duration": {
                 "type": "number",
                 "label": "Duration (seconds)",
                 "required": True,
-                "description": "Duration of recording in seconds."
+                "description": "Duration of recording in seconds. Agent must provide this."
             }
         }
     },
-    "email_sender": {
-        "name": "Email Sender",
+    "EmailSenderTool": { 
+        "name": "Email Sender", 
         "description": "Tool for sending emails.",
         "class": EmailSenderTool,
         "parameters_schema": {
@@ -81,42 +70,42 @@ PREDEFINED_TOOLS_CONFIG = {
                 "description": "Email subject line."
             },
             "body": {
-                "type": "text",
+                "type": "textarea",
                 "label": "Body",
                 "required": True,
                 "description": "Plain text email body content."
             }
         }
     },
-    "evaluate_summarize": {
-        "name": "Evaluate Summarization",
+    "EvaluateSummaryTool": { 
+        "name": "Evaluate Summarization", 
         "description": "Tool for evaluating a generated summary against a transcript.",
         "class": EvaluateSummaryTool,
         "parameters_schema": {
             "transcript": {
-                "type": "text",
+                "type": "textarea", 
                 "label": "Transcript",
                 "required": True,
                 "description": "Original transcript text to compare against."
             },
             "summary": {
-                "type": "text",
+                "type": "textarea", 
                 "label": "Summary",
                 "required": True,
                 "description": "Generated summary to evaluate."
             }
         }
     },
-    "transcribe_audio": {
-        "name": "Transcribe Audio",
-        "description": "Tool for transcribing audio to text.",
+    "TranscribeAudioTool": { 
+        "name": "Transcribe Audio", 
+        "description": "Tool for transcribing audio to text using OpenAI Whisper.",
         "class": TranscribeAudioTool,
         "parameters_schema": {
             "audio_file_path": {
                 "type": "text",
                 "label": "Audio File Path",
                 "required": True,
-                "description": "Full path to the audio file (e.g., audio/meeting1.mp3)."
+                "description": "Full path to the audio file (e.g., /path/to/audio/meeting1.mp3). Agent must provide this."
             }
         }
     }

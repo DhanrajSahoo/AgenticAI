@@ -72,22 +72,44 @@ class CrewBuilder:
                                 f"Failed to instantiate tool '{tool_data.tool_name}' for agent '{agent_data.agent_name}': {e}")
 
                 agent_llm = self.default_llm
-                llm_params = {}
-                if agent_data.agent_model_name and agent_data.agent_model_name.strip():
-                    llm_params['model_name'] = agent_data.agent_model_name
-                if agent_data.agent_temperature is not None:
-                    llm_params['temperature'] = agent_data.agent_temperature
+                llm_params_to_override = {}
 
-                if llm_params:
-                    current_default_model = self.default_llm.model_name
-                    current_default_temp = self.default_llm.temperature
-                    final_model = llm_params.get('model_name', current_default_model)
-                    final_temp = llm_params.get('temperature', current_default_temp)
+                if agent_data.agent_model and agent_data.agent_model.strip():
+                    llm_params_to_override['model_name'] = agent_data.agent_model
+
+                if agent_data.agent_temprature is not None:
+                    llm_params_to_override['temperature'] = agent_data.agent_temprature
+
+                if llm_params_to_override:
+                    final_model_name = llm_params_to_override.get('model_name', self.default_llm.model_name)
+                    final_temperature = llm_params_to_override.get('temperature', self.default_llm.temperature)
+
                     agent_llm = ChatOpenAI(
                         openai_api_key=settings.OPENAI_API_KEY,
-                        model_name=final_model,
-                        temperature=final_temp
+                        model_name=final_model_name,
+                        temperature=final_temperature
                     )
+
+                # Handle agent_iteration
+                agent_max_iter_val = 5
+                if agent_data.agent_iteration is not None:
+                    if isinstance(agent_data.agent_iteration, str):
+                        try:
+                            parsed_iter = int(agent_data.agent_iteration)
+                            if parsed_iter >= 1:
+                                agent_max_iter_val = parsed_iter
+                            else:
+                                print(
+                                    f"Warning: agent_iteration '{agent_data.agent_iteration}' is not >= 1. Using default {agent_max_iter_val}.")
+                        except ValueError:
+                            print(
+                                f"Warning: Could not convert agent_iteration string '{agent_data.agent_iteration}' to int. Using default {agent_max_iter_val}.")
+                    elif isinstance(agent_data.agent_iteration, int):
+                        if agent_data.agent_iteration >= 1:
+                            agent_max_iter_val = agent_data.agent_iteration
+                        else:
+                            print(
+                                f"Warning: agent_iteration {agent_data.agent_iteration} is not >= 1. Using default {agent_max_iter_val}.")
 
                 agent = Agent(
                     role=agent_data.agent_role,
@@ -97,7 +119,7 @@ class CrewBuilder:
                     allow_delegation=agent_data.agent_delegation,
                     tools=agent_tools,
                     llm=agent_llm,
-                    max_iter=agent_data.agent_max_iter,
+                    max_iter=agent_max_iter_val,
                     cache=agent_data.agent_cache
                 )
                 self.crew_agents.append(agent)

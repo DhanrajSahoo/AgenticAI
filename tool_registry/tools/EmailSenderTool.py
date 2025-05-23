@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 from crewai.tools import BaseTool
 from dotenv import load_dotenv
 from email.mime.text import MIMEText
+from core.config import settings
 import smtplib
 import os
 
@@ -23,10 +24,10 @@ class EmailSenderTool(BaseTool):
         try:
             # Load email config from .env
             load_dotenv()
-            smtp_host = os.getenv("EMAIL_HOST")
-            smtp_port = int(os.getenv("EMAIL_PORT", 587))
-            smtp_user = os.getenv("EMAIL_USER")
-            smtp_pass = os.getenv("EMAIL_PASS")
+            smtp_host = settings.EMAIL_HOST
+            smtp_port = settings.EMAIL_PORT
+            smtp_user = settings.EMAIL_USER
+            smtp_pass = settings.EMAIL_PASSWORD
 
             # Build email message
             msg = MIMEText(body)

@@ -13,9 +13,9 @@ class UIAgentNodeData(UIRawNodeData):
     agent_role: str = Field(default="Default Role")
     agent_goal: str = Field(default="Default Goal")
     agent_backstory: str = Field(default="Default Backstory")
-    agent_model_name: Optional[str] = None # e.g., "gpt-4-turbo-preview", maps to llm model_name
-    agent_temperature: Optional[float] = Field(default=0.7, ge=0.0, le=1.0)
-    agent_max_iter: Optional[int] = Field(default=25, alias="agent_iteration", ge=1)
+    agent_model: Optional[str] = None
+    agent_temprature: Optional[float] = Field(default=0.7, ge=0.0, le=1.0) # Matches UI typo
+    agent_iteration: Union[str, int] = Field(default=25) # Allow string, will parse in builder
     agent_delegation: bool = False
     agent_verbose: bool = False
     agent_cache: bool = True
