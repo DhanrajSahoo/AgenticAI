@@ -52,3 +52,7 @@ def get_tool_instance(tool_id: str, config_params: Optional[Dict[str, Any]] = No
         raise RuntimeError(
             f"Failed to instantiate tool '{tool_id}'. Ensure API keys (e.g., SERPER_API_KEY, OPENAI_API_KEY) are set as environment variables. Tool init error: {e}"
         ) from e
+
+def get_tool_instance_id(tool_id):
+    config = PREDEFINED_TOOLS_CONFIG.get(tool_id)
+    return config

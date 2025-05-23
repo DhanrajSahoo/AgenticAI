@@ -14,4 +14,5 @@ class ToolDefinition(BaseModel):
     id: str
     name: str
     description: str
+    class_name: Optional[str] = None
     parameters_schema: Optional[Dict[str, ToolParameterDetail]] = None
