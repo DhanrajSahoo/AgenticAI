@@ -1,0 +1,35 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo Using CodeBuild standard image with Docker pre-installed
+
+  pre_build:
+    commands:
+      - set -e
+      - echo Checking Docker installation...
+      - docker --version
+      - docker info
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 342640191734.dkr.ecr.us-east-1.amazonaws.com
+      - export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - export REPOSITORY_URI=342640191734.dkr.ecr.us-east-1.amazonaws.com/agenticai
+
+  build:
+    commands:
+      - set -e
+      - echo Building the Docker image...
+      - docker build -t $REPOSITORY_URI:$IMAGE_TAG .
+      - echo Pushing the Docker image to ECR...
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+
+  post_build:
+    commands:
+      - set -e
+      - echo Writing imagedefinitions.json...
+      - printf '[{"name":"agenticai-container","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json

@@ -11,3 +11,8 @@ soundfile==0.13.1
 pydub==0.25.1
 nltk==3.9.1
 rouge-score==0.1.2
+crewai==0.120.1
+crewai-tools==0.45.0
+fastapi==0.115.9
+uvicorn==0.34.2
+psycopg2-binary==2.9.10
