@@ -1,0 +1,159 @@
+{
+	"info": {
+		"_postman_id": "d333bd6d-fc9f-40e7-9e42-8cbec645a35f",
+		"name": "CrewAI Backend",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "43197227"
+	},
+	"item": [
+		{
+			"name": "List Available Tools",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "http://127.0.0.1:8000/tools/"
+			},
+			"response": []
+		},
+		{
+			"name": "Create Trip Planner Workflow",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = pm.response.json();",
+							"pm.collectionVariables.set(\"trip_workflow_id\", jsonData.id);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"workflow_name\": \"Paris Deluxe Trip Planner v3\",\n    \"nodes\": [\n        {\n            \"id\": \"agent-city-expert\",\n            \"data\": {\n                \"agent_name\": \"Paris City Expert\",\n                \"agent_role\": \"Local Travel Connoisseur for Paris\",\n                \"agent_goal\": \"Provide detailed, accurate, and engaging information about Paris, including top attractions, local customs, hidden gems, and best times to visit.\",\n                \"agent_backstory\": \"You are a seasoned AI travel guide specialized in Paris. You live and breathe Parisian culture and history, and you leverage advanced web search capabilities to ensure your information is always current.\",\n                \"agent_model_name\": \"gpt-4-turbo-preview\",\n                \"agent_temperature\": 0.6,\n                \"agent_iteration\": 10,\n                \"agent_delegation\": false,\n                \"agent_verbose\": true,\n                \"agent_cache\": true\n            },\n            \"position\": {\"x\": 100, \"y\": 100},\n            \"parents\": [],\n            \"childs\": [\"task-research-paris\"],\n            \"source\": [\"tool-web-search\"]\n        },\n        {\n            \"id\": \"tool-web-search\",\n            \"data\": {\n                \"tool_name\": \"serper_dev_tool\",\n                \"config_params\": {}\n            },\n            \"position\": {\"x\": -150, \"y\": 100},\n            \"parents\": [],\n            \"childs\": [\"agent-city-expert\"],\n            \"source\": []\n        },\n        {\n            \"id\": \"agent-itinerary-crafter\",\n            \"data\": {\n                \"agent_name\": \"Paris Itinerary Crafter\",\n                \"agent_role\": \"Master Itinerary Planner for Parisian Adventures\",\n                \"agent_goal\": \"Design a captivating and practical multi-day travel itinerary for Paris, perfectly balancing iconic landmarks with unique local experiences, based on expert research.\",\n                \"agent_backstory\": \"You are an AI artist who paints with experiences. Given comprehensive research on a city, you craft seamless and memorable journeys. You can delegate further specific research if needed for hyper-personalization.\",\n                \"agent_model_name\": null,\n                \"agent_temperature\": 0.8,\n                \"agent_iteration\": 15,\n                \"agent_delegation\": true,\n                \"agent_verbose\": true,\n                \"agent_cache\": true\n            },\n            \"position\": {\"x\": 100, \"y\": 300},\n            \"parents\": [],\n            \"childs\": [\"task-plan-paris-trip\"],\n            \"source\": [] \n        },\n        {\n            \"id\": \"task-research-paris\",\n            \"data\": {\n                \"task_name\": \"Comprehensive Paris Research\",\n                \"task_description\": \"You MUST use your web search tool to conduct thorough research on Paris, France. Identify the top 7 must-see attractions with brief descriptions. Detail local customs, especially regarding dining etiquette and tipping. Determine the best three months to visit for pleasant weather and moderate tourist crowds. Compile this into a structured report.\",\n                \"task_expected_op\": \"A structured report covering: Top 7 Paris attractions (with descriptions), local dining/tipping customs, and the three best months to visit (weather/crowds considered).\"\n            },\n            \"position\": {\"x\": 400, \"y\": 100},\n            \"parents\": [\"agent-city-expert\"],\n            \"childs\": [\"task-plan-paris-trip\"],\n            \"source\": [\"agent-city-expert\"]\n        },\n        {\n            \"id\": \"task-plan-paris-trip\",\n            \"data\": {\n                \"task_name\": \"Craft 3-Day Paris Itinerary\",\n                \"task_description\": \"Using the comprehensive research report on Paris (which includes attractions, customs, and best visiting times), develop a detailed 3-day travel itinerary. Ensure a blend of iconic sights and authentic local experiences. For each day, suggest activities for morning, afternoon, and evening, including potential dining spots or types of cuisine to try. The itinerary should be engaging and practical.\",\n                \"task_expected_op\": \"A detailed, engaging, and practical 3-day itinerary for Paris, with specific activities and suggestions for morning, afternoon, and evening of each day, explicitly referencing the provided research findings.\"\n            },\n            \"position\": {\"x\": 400, \"y\": 300},\n            \"parents\": [\"agent-itinerary-crafter\", \"task-research-paris\"],\n            \"childs\": [],\n            \"source\": [\"agent-itinerary-crafter\", \"task-research-paris\"]\n        }\n    ]\n}"
+				},
+				"url": "http://127.0.0.1:8000/workflows/"
+			},
+			"response": []
+		},
+		{
+			"name": "Create Lead Capture Workflow",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = pm.response.json();",
+							"pm.collectionVariables.set(\"trip_workflow_id\", jsonData.id);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"workflow_name\": \"Lead Processing\",\n    \"nodes\": [\n        {\n            \"id\": \"tool-1747981925718\", \n            \"data\": { \"tool_name\": \"TranscribeAudioTool\" },\n            \"position\": {\"x\": -330, \"y\": 90}, \"parents\": [], \"childs\": [\"agent-1747980053101\"], \"source\": []\n        },\n        {\n            \"id\": \"agent-1747980053101\", \n            \"data\": {\n                \"agent_name\": \"Lead Capture and Transcribe Agent\",\n                \"agent_role\": \"Processes lead details and transcribes a provided audio file.\",\n                \"agent_goal\": \"Extract lead information and the audio file path from the task instructions, then accurately transcribe the specified audio file.\",\n                \"agent_backstory\": \"I am an AI assistant skilled in data extraction and audio-to-text conversion. I meticulously follow instructions to find the audio file path within my task details and use the 'TranscribeAudioTool'.\",\n                \"agent_model\": \"gpt-4o-mini\", \"agent_temprature\": 0.3, \"agent_iteration\": \"5\", \n                \"agent_delegation\": false, \"agent_verbose\": true, \"agent_cache\": true\n            },\n            \"position\": {\"x\": 210, \"y\": 75}, \"parents\": [\"tool-1747981925718\"], \"childs\": [\"task-1747980863451\"], \"source\": [\"tool-1747981925718\"]\n        },\n        {\n            \"id\": \"task-1747980863451\", \n            \"data\": {\n                \"task_name\": \"Transcribe Audio & Gather Lead Details\",\n                \"task_description\": \"The lead is Sujit Kumar, from Apexon, working as a Lead Engineer. His email is sujit.kumar@apexon.com. The audio file that needs to be transcribed is located at: 'data\\\\recording_20250522201600.wav'. Use the 'TranscribeAudioTool' to get the full text from this audio file. Make sure your output includes all the lead's details (Name, Email, Company, Role) and the complete audio transcription.\",\n                \"task_expected_op\": \"A structured text containing:\\nName: Sujit Kumar\\nEmail: sujit.kumar@apexon.com\\nCompany: Apexon\\nRole: Lead Engineer\\nTranscription: [Full text of the audio transcription]\"\n            },\n            \"position\": {\"x\": 525, \"y\": 105}, \"parents\": [\"agent-1747980053101\"], \"childs\": [\"task-1747980990719\"], \"source\": [\"agent-1747980053101\"] \n        },\n        {\n            \"id\": \"agent-1747980144167\", \n            \"data\": {\n                \"agent_name\": \"Summarizer Agent\",\n                \"agent_role\": \"Information Synthesizer\",\n                \"agent_goal\": \"Create a concise summary from the provided lead information and transcription, focusing on key discussion points.\",\n                \"agent_backstory\": \"I am an AI expert at distilling lengthy texts and conversations into clear, actionable summaries.\",\n                \"agent_model\": \"gpt-4o-mini\", \"agent_temprature\": 0.5, \"agent_iteration\": \"5\",\n                \"agent_delegation\": false, \"agent_verbose\": true, \"agent_cache\": true\n            },\n            \"position\": {\"x\": 435, \"y\": -15}, \"parents\": [], \"childs\": [\"task-1747980990719\"], \"source\": []\n        },\n        {\n            \"id\": \"task-1747980990719\", \n            \"data\": {\n                \"task_name\": \"Summarize Lead's Message\",\n                \"task_description\": \"Take the lead's details and the audio transcription you just received. Focus on the transcribed message from Sujit Kumar. Create a summary that highlights 3 to 5 key points or questions Sujit mentioned.\",\n                \"task_expected_op\": \"A concise summary of Sujit Kumar's transcribed voice message, highlighting 3-5 key points.\"\n            },\n            \"position\": {\"x\": 495, \"y\": 210}, \"parents\": [\"agent-1747980144167\", \"task-1747980863451\"], \"childs\": [\"task-1747981045501\", \"task-1747981104960\"], \"source\": [\"agent-1747980144167\", \"task-1747980863451\"]\n        },\n        {\n            \"id\": \"agent-1747980216672\", \n            \"data\": {\n                \"agent_name\": \"AI Use Cases Recommender\",\n                \"agent_role\": \"Strategic AI Advisor for Apexon\",\n                \"agent_goal\": \"Based on the conversation summary and Sujit Kumar's role at Apexon, recommend relevant Gen AI or agentic use cases.\",\n                \"agent_backstory\": \"I specialize in identifying AI opportunities by analyzing business context and conversation insights, particularly for tech companies like Apexon and roles like Lead Engineer.\",\n                \"agent_model\": \"gpt-4o-mini\", \"agent_temprature\": 0.6, \"agent_iteration\": \"5\",\n                \"agent_delegation\": true, \"agent_verbose\": true, \"agent_cache\": true\n            },\n            \"position\": {\"x\": 645, \"y\": 90}, \"parents\": [], \"childs\": [\"task-1747981045501\"], \"source\": []\n        },\n        {\n            \"id\": \"task-1747981045501\", \n            \"data\": {\n                \"task_name\": \"Recommend AI Use Cases for Sujit (Apexon)\",\n                \"task_description\": \"Analyze the summary of Sujit Kumar's message. Considering he is a Lead Engineer at Apexon, recommend 3 to 5 specific GenAI or Agentic AI use cases that would be valuable for his company, Apexon. Tailor your recommendations to a technical lead's perspective if possible.\",\n                \"task_expected_op\": \"A list of 3-5 actionable AI use case recommendations, tailored to Apexon and a Lead Engineer.\"\n            },\n            \"position\": {\"x\": 480, \"y\": 330}, \"parents\": [\"agent-1747980216672\", \"task-1747980990719\"], \"childs\": [\"task-1747981104960\"], \"source\": [\"agent-1747980216672\", \"task-1747980990719\"]\n        },\n        {\n            \"id\": \"agent-1747980292123\", \n            \"data\": {\n                \"agent_name\": \"Email Writer for Sujit Kumar\",\n                \"agent_role\": \"Professional Email Writer\",\n                \"agent_goal\": \"Draft a professional follow-up email to Sujit Kumar at Apexon, incorporating the conversation summary and the AI recommendations previously generated.\",\n                \"agent_backstory\": \"I am an AI that crafts clear, concise, and engaging business emails. I will use the provided summary and AI use case list to compose a helpful follow-up email.\",\n                \"agent_model\": \"gpt-4o-mini\", \"agent_temprature\": 0.5, \"agent_iteration\": \"5\",\n                \"agent_delegation\": false, \"agent_verbose\": true, \"agent_cache\": true\n            },\n            \"position\": {\"x\": 525, \"y\": 60}, \"parents\": [], \"childs\": [\"task-1747981104960\"], \"source\": []\n        },\n        {\n            \"id\": \"task-1747981104960\", \n            \"data\": {\n                \"task_name\": \"Compose Follow-up Email to Sujit Kumar at Apexon\",\n                \"task_description\": \"Create a follow-up email for Sujit Kumar (sujit.kumar@apexon.com) of Apexon, who is a Lead Engineer. Use the conversation summary and the AI use case recommendations that were generated in previous steps. Format the output as a JSON object structured exactly like this, filling in the dynamic parts:\\n{\\n    \\\"email_details\\\": {\\n        \\\"to_email\\\": \\\"sujit.kumar@apexon.com\\\",\\n        \\\"to_name\\\": \\\"Sujit Kumar\\\",\\n        \\\"subject\\\": \\\"Following Up: AI Opportunities for Apexon - Insights for Sujit Kumar\\\"\\n    },\\n    \\\"email_content\\\": {\\n        \\\"greeting\\\": \\\"Dear Sujit Kumar,\\\",\\n        \\\"introduction\\\": \\\"Thank you for the audio message. Based on our system's analysis, here's a summary of your key points and some potential AI use cases we believe could be particularly relevant for Apexon and your role as Lead Engineer.\\\",\\n        \\\"summary\\\": \\\"[Insert the actual summary of Sujit's message here]\\\",\\n        \\\"recommendations\\\": {\\n            \\\"title\\\": \\\"Suggested AI Use Cases for Apexon (Lead Engineer Perspective):\\\",\\n            \\\"use_cases\\\": \\\"[Insert the list of AI use case recommendations here]\\\"\\n        },\\n        \\\"next_steps\\\": [\\n            \\\"We'd be delighted to discuss these ideas further in a brief call.\\\",\\n            \\\"Please let us know what time works best for you next week for a 15-20 minute chat.\\\"\\n        ],\\n        \\\"closing\\\": \\\"We look forward to helping Apexon explore the potential of AI and how our agentic solutions can drive innovation.\\\",\\n        \\\"signature\\\": \\\"Sincerely,\\\\nThe Genysys AI Team\\\"\\n    }\\n}\",\n                \"task_expected_op\": \"A JSON object representing the complete email, with the summary and recommendations sections fully populated with content from previous tasks.\"\n            },\n            \"position\": {\"x\": 480, \"y\": 435}, \"parents\": [\"agent-1747980292123\", \"task-1747980990719\", \"task-1747981045501\", \"task-1747980863451\"], \n            \"childs\": [\"task-1747981288742\"], \n            \"source\": [\"agent-1747980292123\", \"task-1747980990719\", \"task-1747981045501\", \"task-1747980863451\"] \n        },\n        {\n            \"id\": \"tool-1747981989159\", \n            \"data\": { \"tool_name\": \"EmailSenderTool\" },\n            \"position\": {\"x\": -300, \"y\": 600}, \"parents\": [], \"childs\": [\"agent-1747980519882\"], \"source\": []\n        },\n        {\n            \"id\": \"agent-1747980519882\", \n            \"data\": {\n                \"agent_name\": \"Email Dispatch Agent\",\n                \"agent_role\": \"Automated Mail Sender\",\n                \"agent_goal\": \"Take the structured email JSON object prepared in the previous step, extract the recipient, subject, and body, and then send the email using the 'EmailSenderTool'.\",\n                \"agent_backstory\": \"I am an automated system that processes pre-formatted email data. I will parse the incoming JSON to get all necessary details for the Email Sender Tool.\",\n                \"agent_model\": \"gpt-4o-mini\", \"agent_temprature\": 0.2, \"agent_iteration\": \"5\",\n                \"agent_delegation\": false, \"agent_verbose\": true, \"agent_cache\": false\n            },\n            \"position\": {\"x\": 585, \"y\": 225}, \"parents\": [\"tool-1747981989159\"], \"childs\": [\"task-1747981288742\"], \"source\": [\"tool-1747981989159\"]\n        },\n        {\n            \"id\": \"task-1747981288742\", \n            \"data\": {\n                \"task_name\": \"Send Final Email to Sujit Kumar\",\n                \"task_description\": \"You have received a JSON object containing all the details for an email to Sujit Kumar. Extract the `to_email`, `subject` from the `email_details` part. Then, carefully construct the full email body as a plain text string from the `email_content` part (including greeting, introduction, summary, recommendations, next steps, closing, and signature). Use the 'EmailSenderTool' to send this complete email.\",\n                \"task_expected_op\": \"Confirmation message: 'Email sent successfully to sujit.kumar@apexon.com'.\"\n            },\n            \"position\": {\"x\": 555, \"y\": 585}, \"parents\": [\"agent-1747980519882\", \"task-1747981104960\"], \"childs\": [], \"source\": [\"agent-1747980519882\", \"task-1747981104960\"]\n        }\n    ]\n}"
+				},
+				"url": "http://127.0.0.1:8000/workflows/"
+			},
+			"response": []
+		},
+		{
+			"name": "List Workflows",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "http://127.0.0.1:8000/workflows/"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Workflow by ID",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "http://127.0.0.1:8000/workflows/{{trip_workflow_id}}"
+			},
+			"response": []
+		},
+		{
+			"name": "Update Workflow Name",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"workflow_name\": \"Paris Deluxe Trip Planner v3 - Updated\"\n}"
+				},
+				"url": "http://127.0.0.1:8000/workflows/{{trip_workflow_id}}"
+			},
+			"response": []
+		},
+		{
+			"name": "Run Workflow",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": "http://127.0.0.1:8000/workflows/{{trip_workflow_id}}/run"
+			},
+			"response": []
+		},
+		{
+			"name": "Tool Details",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"id\": \"email_sender\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://127.0.0.1:8000/tools/tool-name"
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Workflow",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": "http://127.0.0.1:8000/workflows/{{trip_workflow_id}}"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "trip_workflow_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
