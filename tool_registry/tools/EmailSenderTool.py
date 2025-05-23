@@ -27,7 +27,7 @@ class EmailSenderTool(BaseTool):
             smtp_host = settings.EMAIL_HOST
             smtp_port = settings.EMAIL_PORT
             smtp_user = settings.EMAIL_USER
-            smtp_pass = settings.EMAIL_PASSWORD
+            smtp_pass = settings.EMAIL_PASS
 
             # Build email message
             msg = MIMEText(body)
