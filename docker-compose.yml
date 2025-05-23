@@ -4,8 +4,8 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: "123#"
+      POSTGRES_USER: genesys_postgresql
+      POSTGRES_PASSWORD: "GeNeAceDgcdaeThc"
       POSTGRES_DB: workflow
     ports:
       - "5432:5433"
@@ -13,7 +13,7 @@ services:
   web:
     build: .
     environment:
-      DATABASE_URL: "postgresql://postgres:123%23@db:5433/workflow"
+      DATABASE_URL: "postgresql://genesys_postgresql:GeNeAceDgcdaeThc@dev3-genesys-postgresql-rds.cowisidbp2lg.us-east-1.rds.amazonaws.com:5432/workflow"
     ports:
       - "3000:3000"
     depends_on:
