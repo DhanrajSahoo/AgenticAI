@@ -1,15 +1,16 @@
 from sqlalchemy.orm import Session
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 import uuid
 
 from . import models as db_models
 from schemas import workflows_schema
 
 
-def create_workflow(db: Session, workflow_create_data: workflows_schema.WorkflowCreate) -> db_models.DBWorkflow:
+def create_workflow(db: Session, workflow_create_data: workflows_schema.WorkflowCreatePayload) -> db_models.DBWorkflow:
+    # workflow_create_data contains workflow_name and nodes
     db_workflow = db_models.DBWorkflow(
-        name=workflow_create_data.name,
-        workflow_data=workflow_create_data.model_dump()
+        name=workflow_create_data.workflow_name,
+        workflow_data={"nodes": [node.model_dump() for node in workflow_create_data.nodes]}
     )
     db.add(db_workflow)
     db.commit()
@@ -27,18 +28,23 @@ def get_workflows(db: Session, skip: int = 0, limit: int = 100) -> List[db_model
 
 
 def update_workflow(
-        db: Session, workflow_id: uuid.UUID, workflow_update_data: workflows_schema.WorkflowUpdate
+        db: Session, workflow_id: uuid.UUID, workflow_update_data: workflows_schema.WorkflowUpdatePayload
 ) -> Optional[db_models.DBWorkflow]:
     db_workflow = get_workflow(db, workflow_id)
     if db_workflow:
-        current_workflow_content = workflows_schema.WorkflowBase(**db_workflow.workflow_data)
-
         update_dict = workflow_update_data.model_dump(exclude_unset=True)
 
-        updated_content_data = current_workflow_content.model_copy(update=update_dict)
+        if "workflow_name" in update_dict:
+            db_workflow.name = update_dict["workflow_name"]
 
-        db_workflow.name = updated_content_data.name
-        db_workflow.workflow_data = updated_content_data.model_dump()
+        if "nodes" in update_dict and update_dict["nodes"] is not None:
+            current_db_data = db_workflow.workflow_data if isinstance(db_workflow.workflow_data, dict) else {}
+            current_db_data["nodes"] = [node.model_dump() for node in workflow_update_data.nodes]
+            db_workflow.workflow_data = current_db_data
+        elif "nodes" in update_dict and update_dict["nodes"] is None:
+            current_db_data = db_workflow.workflow_data if isinstance(db_workflow.workflow_data, dict) else {}
+            current_db_data["nodes"] = []
+            db_workflow.workflow_data = current_db_data
 
         db.commit()
         db.refresh(db_workflow)

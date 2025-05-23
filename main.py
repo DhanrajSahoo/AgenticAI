@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Agentic AI Backend v2",
+    title="Agentic AI Backend",
     description="Backend for no-code agentic AI platform using CrewAI.",
     version="0.2.0"
 )
@@ -32,4 +32,4 @@ app.include_router(workflows_router.router)
 
 @app.get("/", tags=["Root"])
 async def read_root():
-    return {"message": "Welcome to Genysys Agentic AI Backend v2"}
+    return {"message": "Welcome to Agentic AI Backend"}
