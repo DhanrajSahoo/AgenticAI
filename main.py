@@ -9,7 +9,6 @@ from core.config import settings
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
 app = FastAPI(
     title="Agentic AI Backend",
     description="Backend for no-code agentic AI platform using CrewAI.",
