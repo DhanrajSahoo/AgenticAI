@@ -25,4 +25,4 @@ COPY . .
 EXPOSE 80
 
 # Start the FastAPI app using Uvicorn
-CMD ["uvicorn", "workflows.main:app", "--host", "0.0.0.0", "--port", "80", "--reload"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80", "--reload"]
