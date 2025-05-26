@@ -33,3 +33,8 @@ app.include_router(workflows_router.router)
 @app.get("/", tags=["Root"])
 async def read_root():
     return {"message": "Welcome to Agentic AI Backend"}
+
+
+@app.get("/healthz", status_code=200)
+async def healthz():
+    return {"status": "ok"}
