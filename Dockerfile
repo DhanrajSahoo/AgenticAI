@@ -22,7 +22,7 @@ RUN pip install --upgrade pip && \
 COPY . .
 
 # Expose the app port
-EXPOSE 80
+EXPOSE 3000
 
 # Start the FastAPI app using Uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80", "--reload"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3000", "--reload"]
