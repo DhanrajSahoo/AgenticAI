@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, Literal, List
 
+
 class ToolParameterDetail(BaseModel):
     type: Literal["text", "number", "boolean", "fileupload", "textarea"] = "text"
     label: str
@@ -8,10 +9,12 @@ class ToolParameterDetail(BaseModel):
     default: Optional[Any] = None
     description: Optional[str] = None
     options: Optional[List[str]] = None
-    accept: Optional[str] = None # todo: possible change for different input type For fileupload, e.g., ".json,.csv"
+    accept: Optional[str] = None  # todo: possible change for different input type For fileupload, e.g., ".json,.csv"
+
 
 class ToolDefinition(BaseModel):
-    id: str
+    numeric_id: int
+    original_id: str
     name: str
     description: str
     class_name: Optional[str] = None
