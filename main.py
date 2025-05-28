@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
-
+import traceback
 from db.database import create_db_tables
 from api.routers import tools_router, workflows_router
 from core.config import settings
@@ -29,15 +29,45 @@ app.add_middleware(
 )
 
 @app.on_event("startup")
-def on_startup():
-    logger.info("Creating database tables if they don't exist...")
-    create_db_tables()
-    logger.info("Database tables checked/created.")
-    if not settings.OPENAI_API_KEY:
-        logger.warning("OPENAI_API_KEY environment variable is not set. CrewAI may not function.")
-    if not settings.SERPER_API_KEY:
-        logger.warning("SERPER_API_KEY environment variable is not set. SerperDevTool will not function.")
-
+async def on_startup():
+    logger.info("FastAPI application starting up...")
+    
+    # Check critical settings first
+    logger.info(f"Environment: {getattr(settings, 'env', 'not set')}")
+    logger.info(f"Secret name: {getattr(settings, 'secret_cred_name', 'not set')}")
+    
+    try:
+        logger.info("Creating database tables if they don't exist...")
+        create_db_tables()
+        logger.info("Database tables checked/created successfully.")
+    except Exception as e:
+        logger.error(f"Database initialization failed: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        # Don't raise - let app start without DB for debugging
+        logger.warning("Continuing startup without database initialization...")
+    
+    # Check API keys with better logging
+    try:
+        if hasattr(settings, 'OPENAI_API_KEY'):
+            if settings.OPENAI_API_KEY:
+                logger.info("OPENAI_API_KEY is configured")
+            else:
+                logger.warning("OPENAI_API_KEY is not set")
+        else:
+            logger.warning("OPENAI_API_KEY setting not found")
+            
+        if hasattr(settings, 'SERPER_API_KEY'):
+            if settings.SERPER_API_KEY:
+                logger.info("SERPER_API_KEY is configured")
+            else:
+                logger.warning("SERPER_API_KEY is not set")
+        else:
+            logger.warning("SERPER_API_KEY setting not found")
+            
+    except Exception as e:
+        logger.error(f"Error checking API keys: {e}")
+    
+    logger.info("Startup sequence completed.")
 
 # Include routers
 app.include_router(tools_router.router)
@@ -45,9 +75,16 @@ app.include_router(workflows_router.router)
 
 @app.get("/", tags=["Root"])
 async def read_root():
-    return {"message": "Welcome to Agentic AI Backend"}
-
+    try:
+        return {"message": "Welcome to Agentic AI Backend"}
+    except Exception as e:
+        logger.error(f"Root endpoint error: {e}")
+        raise
 
 @app.get("/healthz", status_code=200)
 async def healthz():
-    return {"status": "ok"}
+    try:
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Health check error: {e}")
+        raise
