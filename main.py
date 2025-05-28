@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import logging
 
 from db.database import create_db_tables
@@ -13,6 +14,18 @@ app = FastAPI(
     title="Agentic AI Backend",
     description="Backend for no-code agentic AI platform using CrewAI.",
     version="0.2.0"
+)
+
+origins = [
+    "*",         # todo: change after the UI url
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.on_event("startup")

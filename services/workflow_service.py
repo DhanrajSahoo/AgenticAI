@@ -85,7 +85,7 @@ def update_workflow(
 
 
 def delete_workflow(db: Session, workflow_id: uuid.UUID) -> bool:
-    return crud.delete_workflow(db=db, workflow_id=workflow_id)
+    return crud.soft_delete_workflow(db=db, workflow_id=workflow_id)
 
 
 def run_workflow_service(db: Session, workflow_id: uuid.UUID) -> schema.WorkflowExecutionResult:

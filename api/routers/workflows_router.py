@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict
 import uuid
 import logging
 
@@ -52,32 +52,32 @@ async def api_get_workflow(
     return db_workflow
 
 
-@router.put("/{workflow_id}", response_model=schema.WorkflowResponse)
+@router.post("/{workflow_id}/update", response_model=schema.WorkflowResponse)
 async def api_update_workflow(
-        workflow_id: uuid.UUID,
-        workflow_data: schema.WorkflowUpdatePayload,
-        db: Session = Depends(get_db_session)
+    workflow_id: uuid.UUID,
+    workflow_data: schema.WorkflowUpdatePayload,
+    db: Session = Depends(get_db_session)
 ):
     try:
         updated_workflow = workflow_service.update_workflow(
             db=db, workflow_id=workflow_id, workflow_update_data=workflow_data
         )
         if updated_workflow is None:
-            raise HTTPException(status_code=404, detail="Workflow not found")
+            raise HTTPException(status_code=404, detail="Workflow not found or already deleted")
         return updated_workflow
     except Exception as e:
         logger.error(f"Error updating workflow {workflow_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to update workflow: {str(e)}")
 
 
-@router.delete("/{workflow_id}", status_code=204)
+@router.post("/{workflow_id}/delete", status_code=200, response_model=Dict[str, str])
 async def api_delete_workflow(
-        workflow_id: uuid.UUID,
-        db: Session = Depends(get_db_session)
+    workflow_id: uuid.UUID,
+    db: Session = Depends(get_db_session)
 ):
     if not workflow_service.delete_workflow(db=db, workflow_id=workflow_id):
-        raise HTTPException(status_code=404, detail="Workflow not found or could not be deleted")
-    return
+        raise HTTPException(status_code=404, detail="Workflow not found or already deleted")
+    return {"message": "Workflow marked as deleted successfully"}
 
 
 @router.post("/{workflow_id}/run", response_model=schema.WorkflowExecutionResult)
