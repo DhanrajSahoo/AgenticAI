@@ -6,7 +6,7 @@ from db.database import create_db_tables
 from api.routers import tools_router, workflows_router
 from core.config import settings
 
-# Setup logging
+# Setup logging log
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
