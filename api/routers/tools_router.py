@@ -13,7 +13,7 @@ router = APIRouter(
 
 logger = logging.getLogger(__name__)
 
-@router.get("/", response_model=List[ToolDefinition])
+@router.post("/", response_model=List[ToolDefinition])
 async def api_list_available_tools():
     try:
         return tool_service.list_available_tools()

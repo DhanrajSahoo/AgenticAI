@@ -42,8 +42,8 @@ def get_workflow(db: Session, workflow_id: uuid.UUID) -> Optional[schema.Workflo
     return None
 
 
-def list_workflows(db: Session, skip: int = 0, limit: int = 100) -> List[schema.WorkflowResponse]:
-    db_workflows_list = crud.get_workflows(db=db, skip=skip, limit=limit)
+def list_workflows(db: Session, payload: schema.WorkflowListPayload) -> List[schema.WorkflowResponse]:
+    db_workflows_list = crud.get_workflows(db=db, skip=payload.skip, limit=payload.limit)
     response_list = []
     for wf in db_workflows_list:
         ui_nodes_from_db = []
