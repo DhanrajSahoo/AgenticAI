@@ -7,8 +7,8 @@ from schemas import workflows_schema as schema
 from .crew_builder import CrewBuilder, CrewBuilderError
 
 
-def create_workflow(db: Session, workflow_data: schema.WorkflowCreatePayload) -> schema.WorkflowResponse:
-    db_workflow_obj = crud.create_workflow(db=db, workflow_create_data=workflow_data)
+def create_workflow(db: Session, workflow_data_content: schema.WorkflowDataContent) -> schema.WorkflowResponse:
+    db_workflow_obj = crud.create_workflow(db=db, workflow_payload_data=workflow_data_content)
 
     ui_nodes_from_db = []
     if db_workflow_obj.workflow_data and "nodes" in db_workflow_obj.workflow_data:

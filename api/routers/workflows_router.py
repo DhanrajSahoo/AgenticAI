@@ -18,11 +18,11 @@ logger = logging.getLogger(__name__)
 
 @router.post("/", response_model=schema.WorkflowResponse, status_code=201)
 async def api_create_workflow(
-        workflow_data: schema.WorkflowCreatePayload,
+        payload: schema.WorkflowCreatePayload,
         db: Session = Depends(get_db_session)
 ):
     try:
-        return workflow_service.create_workflow(db=db, workflow_data=workflow_data)
+        return workflow_service.create_workflow(db=db, workflow_data_content=payload.data)
     except Exception as e:
         logger.error(f"Error creating workflow: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to create workflow: {str(e)}")

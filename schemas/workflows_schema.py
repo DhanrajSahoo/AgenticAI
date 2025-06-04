@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict, Any, Union
-from pydantic import BaseModel, Field, validator, UUID4
+from pydantic import BaseModel, Field, validator, UUID4, EmailStr
 from datetime import datetime
 
 
@@ -39,9 +39,15 @@ class UINode(BaseModel):
     source: List[str] = Field(default_factory=list)
 
 # Workflow API Payloads
-class WorkflowCreatePayload(BaseModel):
+class WorkflowDataContent(BaseModel):
     workflow_name: str
     nodes: List[UINode]
+
+class WorkflowCreatePayload(BaseModel):
+    token: str
+    user_name: Optional[str] = ""
+    user_email: Optional[EmailStr] = ""
+    data: WorkflowDataContent
 
 class WorkflowUpdatePayload(BaseModel):
     workflow_name: Optional[str] = None
