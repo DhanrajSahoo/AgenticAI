@@ -18,35 +18,34 @@ logger = logging.getLogger(__name__)
 
 @router.post("/", response_model=schema.WorkflowResponse, status_code=201)
 async def api_create_workflow(
-        workflow_data: schema.WorkflowCreatePayload,
+        payload: schema.WorkflowCreatePayload,
         db: Session = Depends(get_db_session)
 ):
     try:
-        return workflow_service.create_workflow(db=db, workflow_data=workflow_data)
+        return workflow_service.create_workflow(db=db, workflow_data_content=payload.data)
     except Exception as e:
         logger.error(f"Error creating workflow: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to create workflow: {str(e)}")
 
 
-@router.get("/", response_model=List[schema.WorkflowResponse])
+@router.post("/list", response_model=List[schema.WorkflowResponse])
 async def api_list_workflows(
-        skip: int = 0,
-        limit: int = 100,
+        payload: schema.WorkflowListPayload,
         db: Session = Depends(get_db_session)
 ):
     try:
-        return workflow_service.list_workflows(db=db, skip=skip, limit=limit)
+        return workflow_service.list_workflows(db=db, payload=payload)
     except Exception as e:
         logger.error(f"Error listing workflows: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to list workflows.")
 
 
-@router.get("/{workflow_id}", response_model=schema.WorkflowResponse)
+@router.post("/details", response_model=schema.WorkflowResponse)
 async def api_get_workflow(
-        workflow_id: uuid.UUID,
+        payload: schema.WorkflowDetailPayload,
         db: Session = Depends(get_db_session)
 ):
-    db_workflow = workflow_service.get_workflow(db=db, workflow_id=workflow_id)
+    db_workflow = workflow_service.get_workflow(db=db, workflow_id=payload.workflow_id)
     if db_workflow is None:
         raise HTTPException(status_code=404, detail="Workflow not found")
     return db_workflow

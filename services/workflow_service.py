@@ -7,8 +7,8 @@ from schemas import workflows_schema as schema
 from .crew_builder import CrewBuilder, CrewBuilderError
 
 
-def create_workflow(db: Session, workflow_data: schema.WorkflowCreatePayload) -> schema.WorkflowResponse:
-    db_workflow_obj = crud.create_workflow(db=db, workflow_create_data=workflow_data)
+def create_workflow(db: Session, workflow_data_content: schema.WorkflowDataContent) -> schema.WorkflowResponse:
+    db_workflow_obj = crud.create_workflow(db=db, workflow_payload_data=workflow_data_content)
 
     ui_nodes_from_db = []
     if db_workflow_obj.workflow_data and "nodes" in db_workflow_obj.workflow_data:
@@ -42,8 +42,8 @@ def get_workflow(db: Session, workflow_id: uuid.UUID) -> Optional[schema.Workflo
     return None
 
 
-def list_workflows(db: Session, skip: int = 0, limit: int = 100) -> List[schema.WorkflowResponse]:
-    db_workflows_list = crud.get_workflows(db=db, skip=skip, limit=limit)
+def list_workflows(db: Session, payload: schema.WorkflowListPayload) -> List[schema.WorkflowResponse]:
+    db_workflows_list = crud.get_workflows(db=db, skip=payload.skip, limit=payload.limit)
     response_list = []
     for wf in db_workflows_list:
         ui_nodes_from_db = []

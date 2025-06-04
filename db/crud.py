@@ -6,11 +6,11 @@ from . import models as db_models
 from schemas import workflows_schema
 
 
-def create_workflow(db: Session, workflow_create_data: workflows_schema.WorkflowCreatePayload) -> db_models.DBWorkflow:
+def create_workflow(db: Session, workflow_payload_data: workflows_schema.WorkflowDataContent) -> db_models.DBWorkflow:
     # workflow_create_data contains workflow_name and nodes
     db_workflow = db_models.DBWorkflow(
-        name=workflow_create_data.workflow_name,
-        workflow_data={"nodes": [node.model_dump() for node in workflow_create_data.nodes]},
+        name=workflow_payload_data.workflow_name,
+        workflow_data={"nodes": [node.model_dump() for node in workflow_payload_data.nodes]},
         is_deleted=False
     )
     db.add(db_workflow)

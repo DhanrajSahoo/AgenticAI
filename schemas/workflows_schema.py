@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict, Any, Union
-from pydantic import BaseModel, Field, validator, UUID4
+from pydantic import BaseModel, Field, validator, UUID4, EmailStr
 from datetime import datetime
 
 
@@ -39,9 +39,15 @@ class UINode(BaseModel):
     source: List[str] = Field(default_factory=list)
 
 # Workflow API Payloads
-class WorkflowCreatePayload(BaseModel):
+class WorkflowDataContent(BaseModel):
     workflow_name: str
     nodes: List[UINode]
+
+class WorkflowCreatePayload(BaseModel):
+    token: str
+    user_name: Optional[str] = ""
+    user_email: Optional[EmailStr] = ""
+    data: WorkflowDataContent
 
 class WorkflowUpdatePayload(BaseModel):
     workflow_name: Optional[str] = None
@@ -65,3 +71,12 @@ class WorkflowExecutionResult(BaseModel):
     status: str
     output: Optional[Any] = None
     error: Optional[str] = None
+
+
+class WorkflowListPayload(BaseModel):
+    skip: int = Field(default=0, ge=0)
+    limit: int = Field(default=100, ge=1, le=200)  # todo: discuss max limit with team
+
+
+class WorkflowDetailPayload(BaseModel):
+    workflow_id: UUID4
