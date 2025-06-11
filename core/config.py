@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     EMAIL_PORT: int = 587
     EMAIL_USER: str
     EMAIL_PASS: str
-    access_key: str
-    secret_key: str
+    access_key: str = 'AKIAU7RXSND3IHVUQHHI'
+    secret_key: str = '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'
 
     model_config = SettingsConfigDict(
         env_file=".env",
