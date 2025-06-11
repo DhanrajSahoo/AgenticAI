@@ -6,6 +6,10 @@ from schemas import workflows_schema as ui_schema
 from tool_registry.registry import get_tool_instance
 from core.config import settings
 
+from core.config import Config
+
+os.environ["OPENAI_API_KEY"] = Config.openai_key
+
 from crewai import Agent, Task, Crew, Process
 from langchain_openai import ChatOpenAI
 
