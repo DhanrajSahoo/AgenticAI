@@ -86,7 +86,7 @@ class Config(object):
     database = 'postgres'  # cf["db"]["database"]
     host = 'localhost'  # cf["db"]["host"]
     port = 5433  # cf["db"]["port"]
-    user = 'postgres'  # cf["db"]["user"]
+    user = 'postgres'
     password = '123#'
     openai_key = db_cred.get('Open_AI_key')
 
