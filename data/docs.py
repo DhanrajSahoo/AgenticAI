@@ -6,7 +6,7 @@ from typing import List
 
 import psycopg2
 from pydantic import BaseModel, Field, SecretStr
-from sentence_transformers import SentenceTransformer
+#from sentence_transformers import SentenceTransformer
 from PyPDF2 import PdfReader
 from docx import Document
 
@@ -27,9 +27,9 @@ class EmbeddingsProcessor:
     Processes documents (PDF, DOCX) to extract text, split into chunks,
     generate embeddings, and store them in a PostgreSQL database.
     """
-
-    def __init__(self,model_name: str,db_config,max_chunk_len: int = 1024):
-        self.model = SentenceTransformer(model_name)
+    #, model_name: str
+    def __init__(self,db_config,max_chunk_len: int = 1024):
+        #self.model = SentenceTransformer(model_name)
         self.db_config = db_config
         self.max_chunk_len = max_chunk_len
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -115,52 +115,52 @@ class EmbeddingsProcessor:
         doc = Document(file_path)
         return "\n".join(para.text for para in doc.paragraphs)
 
-    def _store_embeddings(
-        self,
-        conn: psycopg2.extensions.connection,
-        table_name: str,
-        filename: str,
-        chunks: List[str],
-    ) -> None:
-        """
-        Generates embeddings for each chunk and stores them in the database.
-        """
-        with conn.cursor() as cur:
-            for chunk in chunks:
-                safe_text = chunk.replace("\x00", "")
-                embedding = self.model.encode([safe_text])[0].tolist()
-                cur.execute(
-                    f"INSERT INTO {table_name} (filename, text, embedding) VALUES (%s, %s, %s);",
-                    (filename, safe_text, embedding),
-                )
-            conn.commit()
-            self.logger.info(
-                "Inserted %d embeddings for '%s' into '%s'.",
-                len(chunks), filename, table_name,
-            )
+    # def _store_embeddings(
+    #     self,
+    #     conn: psycopg2.extensions.connection,
+    #     table_name: str,
+    #     filename: str,
+    #     chunks: List[str],
+    # ) -> None:
+    #     """
+    #     Generates embeddings for each chunk and stores them in the database.
+    #     """
+    #     with conn.cursor() as cur:
+    #         for chunk in chunks:
+    #             safe_text = chunk.replace("\x00", "")
+    #             embedding = self.model.encode([safe_text])[0].tolist()
+    #             cur.execute(
+    #                 f"INSERT INTO {table_name} (filename, text, embedding) VALUES (%s, %s, %s);",
+    #                 (filename, safe_text, embedding),
+    #             )
+    #         conn.commit()
+    #         self.logger.info(
+    #             "Inserted %d embeddings for '%s' into '%s'.",
+    #             len(chunks), filename, table_name,
+    #         )
 
-    def process_directory(self, folder_path: str, table_name: str) -> None:
-        """
-        Walks through a directory, processes PDF and DOCX files,
-        and loads embeddings into the specified table.
-        """
-        with self.get_connection() as conn:
-            self._ensure_vector_extension(conn)
-            self._drop_table(conn, table_name)
-            self._create_table(conn, table_name)
-
-            for root, _, files in os.walk(folder_path):
-                for fname in files:
-                    path = os.path.join(root, fname)
-                    if fname.lower().endswith(".pdf"):
-                        text = self._extract_pdf_text(path)
-                    elif fname.lower().endswith(".docx"):
-                        text = self._extract_docx_text(path)
-                    else:
-                        continue
-
-                    chunks = self._chunk_text(text)
-                    self._store_embeddings(conn, table_name, os.path.basename(path), chunks)
+    # def process_directory(self, folder_path: str, table_name: str) -> None:
+    #     """
+    #     Walks through a directory, processes PDF and DOCX files,
+    #     and loads embeddings into the specified table.
+    #     """
+    #     with self.get_connection() as conn:
+    #         self._ensure_vector_extension(conn)
+    #         self._drop_table(conn, table_name)
+    #         self._create_table(conn, table_name)
+    #
+    #         for root, _, files in os.walk(folder_path):
+    #             for fname in files:
+    #                 path = os.path.join(root, fname)
+    #                 if fname.lower().endswith(".pdf"):
+    #                     text = self._extract_pdf_text(path)
+    #                 elif fname.lower().endswith(".docx"):
+    #                     text = self._extract_docx_text(path)
+    #                 else:
+    #                     continue
+    #
+    #                 chunks = self._chunk_text(text)
+    #                 self._store_embeddings(conn, table_name, os.path.basename(path), chunks)
 
 
 # Example usage:
