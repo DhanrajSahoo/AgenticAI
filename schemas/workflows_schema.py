@@ -50,8 +50,10 @@ class WorkflowCreatePayload(BaseModel):
     data: WorkflowDataContent
 
 class WorkflowUpdatePayload(BaseModel):
-    workflow_name: Optional[str] = None
-    nodes: Optional[List[UINode]] = None
+    token: str
+    user_name: Optional[str] = ""
+    user_email: Optional[EmailStr] = ""
+    data: WorkflowDataContent
 
 # Workflow Response Model
 class WorkflowResponse(BaseModel):
