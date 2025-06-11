@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 import traceback
 from db.database import create_db_tables
-from api.routers import tools_router, workflows_router
+from api.routers import tools_router, workflows_router, data_routers
 from core.config import settings
 
 # Setup logging log
@@ -72,6 +72,7 @@ async def on_startup():
 # Include routers
 app.include_router(tools_router.router)
 app.include_router(workflows_router.router)
+app.include_router(data_routers.router)
 
 @app.get("/", tags=["Root"])
 async def read_root():
