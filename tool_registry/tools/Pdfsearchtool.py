@@ -3,7 +3,9 @@ from pydantic import BaseModel, Field
 import os
 from typing import Type
 from crewai_tools import PDFSearchTool
-os.environ["OPENAI_API_KEY"] = "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"
+from core.config import Config
+
+os.environ["OPENAI_API_KEY"] = Config.openai_key
 
 
 class PDFQuerySchema(BaseModel):
