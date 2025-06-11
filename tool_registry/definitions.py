@@ -3,6 +3,7 @@ from tool_registry.tools.AudioRecorder import VoiceRecorderTool
 from tool_registry.tools.EmailSenderTool import EmailSenderTool
 from tool_registry.tools.EvaluateSummarization import EvaluateSummaryTool
 from tool_registry.tools.TranscribeAudioTool import TranscribeAudioTool
+from tool_registry.tools.Pdfsearchtool import PDFQueryTool
 
 PREDEFINED_TOOLS_CONFIG = {
     "serper_dev_tool": {
@@ -106,6 +107,25 @@ PREDEFINED_TOOLS_CONFIG = {
                 "label": "Audio File Path",
                 "required": True,
                 "description": "Full path to the audio file (e.g., /path/to/audio/meeting1.mp3). Agent must provide this."
+            }
+        }
+    },
+    "PdfSearchTool": {
+        "name": "Transcribe Audio",
+        "description": "Tool for transcribing audio to text using OpenAI Whisper.",
+        "class": PDFQueryTool,
+        "parameters_schema": {
+            "pdf_path": {
+                "type": "text",
+                "label": "pdf File Path",
+                "required": True,
+                "description": "Full path to the pdf file (e.g., /path/to/audio/document.pdf). Agent must provide this."
+            },
+            "query": {
+                "type": "text",
+                "label": "question",
+                "required": True,
+                "description": "query to perform search in pdf file"
             }
         }
     }
