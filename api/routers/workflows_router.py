@@ -59,7 +59,7 @@ async def api_update_workflow(
 ):
     try:
         updated_workflow = workflow_service.update_workflow(
-            db=db, workflow_id=workflow_id, workflow_update_data=workflow_data
+            db=db, workflow_id=workflow_id, workflow_update_data=workflow_data.data
         )
         if updated_workflow is None:
             raise HTTPException(status_code=404, detail="Workflow not found or already deleted")

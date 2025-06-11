@@ -33,26 +33,27 @@ def get_workflows(db: Session, skip: int = 0, limit: int = 100) -> List[db_model
 
 
 def update_workflow(
-        db: Session, workflow_id: uuid.UUID, workflow_update_data: workflows_schema.WorkflowUpdatePayload
+        db: Session, workflow_id: uuid.UUID, workflow_update_data: workflows_schema.WorkflowDataContent
 ) -> Optional[db_models.DBWorkflow]:
     db_workflow = get_workflow(db, workflow_id)
     if db_workflow:
-        update_dict = workflow_update_data.model_dump(exclude_unset=True)
+        if workflow_update_data.workflow_name:
+            db_workflow.name = workflow_update_data.workflow_name
 
-        if "workflow_name" in update_dict:
-            db_workflow.name = update_dict["workflow_name"]
-
-        if "nodes" in update_dict and update_dict["nodes"] is not None:
-            current_db_data = db_workflow.workflow_data if isinstance(db_workflow.workflow_data, dict) else {}
-            current_db_data["nodes"] = [node.model_dump() for node in workflow_update_data.nodes]
-            db_workflow.workflow_data = current_db_data
-        elif "nodes" in update_dict and update_dict["nodes"] is None:
-            current_db_data = db_workflow.workflow_data if isinstance(db_workflow.workflow_data, dict) else {}
-            current_db_data["nodes"] = []
-            db_workflow.workflow_data = current_db_data
+        if workflow_update_data.nodes is not None:
+            db_workflow.workflow_data = {
+                **(db_workflow.workflow_data or {}),
+                "nodes": [node.model_dump() for node in workflow_update_data.nodes]
+            }
+        else:
+            db_workflow.workflow_data = {
+                **(db_workflow.workflow_data or {}),
+                "nodes": []
+            }
 
         db.commit()
         db.refresh(db_workflow)
+
     return db_workflow
 
 
