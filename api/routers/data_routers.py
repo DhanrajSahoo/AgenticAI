@@ -1,9 +1,9 @@
 import os
-import pdb
 import tempfile
 from io import BytesIO
 from typing import List
 from fastapi import APIRouter, HTTPException, Depends,File, UploadFile
+from crewai_tools import FileReadTool, CSVSearchTool, PDFSearchTool
 #from validators import file_validation
 from data.docs import EmbeddingsProcessor
 from core.config import Config
@@ -41,22 +41,30 @@ router = APIRouter(
 )
 #'sentence-transformers/all-MiniLM-L6-v2',
 embed = EmbeddingsProcessor(db_config=Config)
+
+
 @router.post("/upload/", status_code=201)
 async def upload_file(files: List[UploadFile] = File(...)):
     try:
         # validate_upload_files(files)
         text = ""
         for f in files:
-            pdb.set_trace()
             if f.filename[-4:] == '.pdf':
                 contents = await f.read()
-                data = embed._extract_pdf_text(file_path=BytesIO(contents))
-                text += data
+                path = await save_upload_to_tempfile(f)
+                text += path
+                #file_reader = PDFSearchTool(file_path=path)
+                # data = embed._extract_pdf_text(file_path=BytesIO(contents))
+                # text += data
                 # … your storage logic …
-                #saved.append(f.filename)
+                # saved.append(f.filename)
             elif f.filename[-4:] == '.wav':
                 path = await save_upload_to_tempfile(f)
                 text += path
+            elif f.filename[-4:] == '.csv':
+                path = await save_upload_to_tempfile(f)
+                text += path
+                #file_reader = FileReadTool(file_path=path)
 
         return {"Message": text}
     except Exception as e:
