@@ -39,8 +39,8 @@ router = APIRouter(
     prefix="/data",
     tags=["Data"]
 )
-
-embed = EmbeddingsProcessor('sentence-transformers/all-MiniLM-L6-v2',db_config=Config)
+#'sentence-transformers/all-MiniLM-L6-v2',
+embed = EmbeddingsProcessor(db_config=Config)
 @router.post("/upload/", status_code=201)
 async def upload_file(files: List[UploadFile] = File(...)):
     try:
