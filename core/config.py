@@ -54,3 +54,14 @@ try:
 except ValueError as e:  # Catch the ValueError raised by our validator or Pydantic
     print(f"Configuration Error: {e}")
     raise  # Re-raise to stop the application if needed
+
+class Config(object):
+    database = 'postgres'  # cf["db"]["database"]
+    host = 'localhost'  # cf["db"]["host"]
+    port = 5433  # cf["db"]["port"]
+    user = 'postgres'  # cf["db"]["user"]
+    password = '123#'
+
+app_config = {
+    'local': Config
+}
