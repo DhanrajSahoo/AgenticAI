@@ -132,6 +132,7 @@ class CrewBuilder:
     def _instantiate_tasks_and_map_agents(self) -> Dict[str, Dict[str, Any]]:
         """
         First pass: create Task instances and identify their assigned agent and raw context task IDs.
+        Prioritizes 'parents' array for connections, falls back to 'source' if 'parents' is empty.
         Returns a dictionary of task configurations.
         """
         task_configs: Dict[str, Dict[str, Any]] = {}
@@ -146,24 +147,39 @@ class CrewBuilder:
                 assigned_agent_instance: Optional[Agent] = None
                 context_task_node_ids: List[str] = []
 
-                for source_node_id in ui_node.source:
-                    source_node_type = self._get_node_type(source_node_id)
-                    if source_node_type == "agent":
-                        agent_instance = self.agent_node_to_instance_map.get(source_node_id)
+                # --- Start of the modified logic block ---
+                # Prioritize parents for connections
+                connection_candidates = ui_node.parents
+
+                # If parents is empty, check source as a fallback
+                # We use hasattr and check if ui_node.source is not empty to be robust
+                if not connection_candidates and hasattr(ui_node, 'source') and ui_node.source:
+                    connection_candidates = ui_node.source
+                # --- End of the modified logic block ---
+
+                # Now iterate through the determined list of connection candidates
+                for connected_node_id in connection_candidates:
+                    connected_node_type = self._get_node_type(connected_node_id)
+                    if connected_node_type == "agent":
+                        agent_instance = self.agent_node_to_instance_map.get(connected_node_id)
                         if not agent_instance:
-                            # This check is important. Agent must be instantiated first.
                             raise CrewBuilderError(
-                                f"Agent node '{source_node_id}' for task '{ui_node.id}' not found or not instantiated.")
+                                f"Agent node '{connected_node_id}' for task '{ui_node.id}' not found or not instantiated."
+                            )
                         assigned_agent_instance = agent_instance
-                    elif source_node_type == "task":
-                        context_task_node_ids.append(source_node_id)
+                    elif connected_node_type == "task":
+                        context_task_node_ids.append(connected_node_id)
 
                 if not assigned_agent_instance:
                     if not self.crew_agents:
                         raise CrewBuilderError(
-                            f"No agents defined in the workflow to assign to task '{task_data.task_name}'.")
+                            f"No agents defined in the workflow to assign to task '{task_data.task_name}'."
+                        )
+                    # Update the error message to clearly state both parents and source were checked
                     raise CrewBuilderError(
-                        f"Task '{task_data.task_name}' (Node ID: {ui_node.id}) is not connected to an agent via its 'source' array.")
+                        f"Task '{task_data.task_name}' (Node ID: {ui_node.id}) is not connected to an agent "
+                        f"via its 'parents' array, and its 'source' array is also empty or does not contain an agent."
+                    )
 
                 task_configs[ui_node.id] = {
                     "description": task_data.task_description,
@@ -180,7 +196,7 @@ class CrewBuilder:
                 agent=config["agent_instance"]
                 # `context` will be set in the next step
             )
-            self.task_node_to_instance_map[ui_node_id] = task  # Store the CrewAI Task instance
+            self.task_node_to_instance_map[ui_node_id] = task
 
         return task_configs
 
