@@ -4,6 +4,8 @@ from tool_registry.tools.EmailSenderTool import EmailSenderTool
 from tool_registry.tools.EvaluateSummarization import EvaluateSummaryTool
 from tool_registry.tools.TranscribeAudioTool import TranscribeAudioTool
 from tool_registry.tools.Pdfsearchtool import PDFQueryTool
+from tool_registry.tools.WordSearchTool import DocQueryTool
+from tool_registry.tools.CsvSearchTool import CsvQueryTool
 
 PREDEFINED_TOOLS_CONFIG = {
     "serper_dev_tool": {
@@ -112,7 +114,7 @@ PREDEFINED_TOOLS_CONFIG = {
     },
     "PdfSearchTool": {
         "name": "PdfSearchTool",
-        "description": "Tool for transcribing audio to text using OpenAI Whisper.",
+        "description": "Tool for extracting relevant text from doc.",
         "class": PDFQueryTool,
         "parameters_schema": {
             "pdf_path": {
@@ -126,6 +128,44 @@ PREDEFINED_TOOLS_CONFIG = {
                 "label": "question",
                 "required": True,
                 "description": "query to perform search in pdf file"
+            }
+        }
+    },
+    "WordSearchTool": {
+        "name": "WordSearchTool",
+        "description": "Tool for extracting relevant text from doc",
+        "class": DocQueryTool,
+        "parameters_schema": {
+            "word_path": {
+                "type": "text",
+                "label": "word File Path",
+                "required": True,
+                "description": "Full path to the word file (e.g., /path/to/audio/document.docx). Agent must provide this."
+            },
+            "query": {
+                "type": "text",
+                "label": "question",
+                "required": True,
+                "description": "query to perform search in word file"
+            }
+        }
+    },
+    "CsvSearchTool": {
+        "name": "CsvSearchTool",
+        "description": "Tool for extracting relevant text from CSV data frame",
+        "class": CsvQueryTool,
+        "parameters_schema": {
+            "csv_path": {
+                "type": "text",
+                "label": "csv File Path",
+                "required": True,
+                "description": "Full path to the csv file (e.g., /path/to/audio/document.csv). Agent must provide this."
+            },
+            "query": {
+                "type": "text",
+                "label": "question",
+                "required": True,
+                "description": "query to perform search in csv file"
             }
         }
     }

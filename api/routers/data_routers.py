@@ -61,6 +61,8 @@ async def upload_file(files: List[UploadFile] = File(...)):
             elif f.filename[-4:] == '.wav':
                 path = await save_upload_to_tempfile(f)
                 text += path
+            elif f.filename[-5:] == '.docx':
+                path = await save_upload_to_tempfile(f)
             elif f.filename[-4:] == '.csv':
                 path = await save_upload_to_tempfile(f)
                 text += path
