@@ -128,6 +128,7 @@ async def upload_file(files: List[UploadFile] = File(...),db: Session = Depends(
 def fetch_file_url(payload: FileQuery, db: Session = Depends(get_db_session), requests=None):
     try:
         s3_url = get_file_url_by_name(db, payload.file_name)
+        logger.info(f"after s3 url { s3_url}")
         response = requests.get(s3_url, stream=True)
         response.raise_for_status()
 
@@ -144,6 +145,8 @@ def fetch_file_url(payload: FileQuery, db: Session = Depends(get_db_session), re
                 f.write(chunk)
         if not s3_url:
             raise HTTPException(status_code=404, detail="File not found")
+        logger.info({"file_name": payload.file_name, "file_url": tmp_file_path})
         return {"file_name": payload.file_name, "file_url": tmp_file_path}
     except Exception as e:
+        logger.info(f"error{e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch the url: {str(e)}")
