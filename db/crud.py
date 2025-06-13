@@ -1,9 +1,10 @@
+import uuid
 from sqlalchemy.orm import Session
 from typing import List, Optional
-import uuid
 
 from . import models as db_models
 from schemas import workflows_schema
+from schemas.tools_schema import FileCreate
 
 
 def create_workflow(db: Session, workflow_payload_data: workflows_schema.WorkflowDataContent) -> db_models.DBWorkflow:
@@ -67,3 +68,19 @@ def soft_delete_workflow(db: Session, workflow_id: uuid.UUID) -> bool:
         db.commit()
         return True
     return False
+
+def create_file_record(db: Session, file_data: FileCreate) -> db_models.Files:
+    db_file = db_models.Files(
+        file_name=file_data.file_name,
+        file_url=file_data.file_url
+    )
+    db.add(db_file)
+    db.commit()
+    db.refresh(db_file)
+    return db_file
+
+def get_file_url_by_name(db: Session, file_name: str) -> str:
+    file_record = db.query(db_models.Files).filter(db_models.Files.file_name == file_name).first()
+    if file_record:
+        return file_record.file_url
+    return None  # or raise HTTPException if not found
