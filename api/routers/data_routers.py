@@ -1,4 +1,5 @@
 import os
+import logging
 import tempfile
 from io import BytesIO
 from typing import List
@@ -15,6 +16,12 @@ from schemas import workflows_schema as schema
 from schemas.tools_schema import FileCreate, FileQuery
 from services.aws_services import upload_pdf_to_s3_direct
 from db.crud import create_file_record, get_file_url_by_name
+from services.aws_services import CloudWatchLogHandler
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = CloudWatchLogHandler('agentic-ai', 'agentic-ai')
+logger.addHandler(handler)
 
 async def save_upload_to_tempfile(
     upload: UploadFile,
@@ -57,16 +64,20 @@ async def upload_file(files: List[UploadFile] = File(...),db: Session = Depends(
         text = ""
         for f in files:
             if f.filename[-4:].lower() == '.pdf':
+                logger.info(f"inside pdf {f.filename}")
                 public_url = upload_pdf_to_s3_direct(
                     file=f,
                     bucket_name="apexon-agentic-ai",
                     s3_key=f.filename
                 )
+                logger.info(f"public url:{public_url}")
                 file = FileCreate(
                     file_name=f.filename,
                     file_url=public_url
                 )
                 create_file_record(db, file)
+                logger.info(f"create file done")
+                logger.info({"Message": "PDF File uploaded successfully!"})
                 return {"Message": "PDF File uploaded successfully!"}
             elif f.filename[-4:] == '.wav':
                 public_url = upload_pdf_to_s3_direct(
@@ -106,10 +117,10 @@ async def upload_file(files: List[UploadFile] = File(...),db: Session = Depends(
                 )
                 create_file_record(db, file)
                 return {"Message": "Word File uploaded successfully!"}
-
+        logger.info({"Message": text})
         return {"Message": text}
     except Exception as e:
-        print(f"while uploading file: {e}", exc_info=True)
+        logger.info(f"while uploading file: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to upload a file: {str(e)}")
 
 
