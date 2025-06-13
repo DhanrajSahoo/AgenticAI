@@ -41,6 +41,7 @@ class UINode(BaseModel):
 # Workflow API Payloads
 class WorkflowDataContent(BaseModel):
     workflow_name: str
+    workflow_description: str
     nodes: List[UINode]
 
 class WorkflowCreatePayload(BaseModel):
@@ -59,6 +60,7 @@ class WorkflowUpdatePayload(BaseModel):
 class WorkflowResponse(BaseModel):
     id: UUID4
     workflow_name: str
+    workflow_description: str
     nodes: List[UINode]
     created_at: datetime
     updated_at: datetime
