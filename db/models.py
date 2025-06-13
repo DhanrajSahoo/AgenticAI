@@ -10,6 +10,7 @@ class DBWorkflow(Base):
 
     id = Column(DB_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, index=True, nullable=False)
+    description = Column(String, index=True, nullable=False)
     workflow_data = Column(JSON, nullable=False)
     is_deleted = Column(Boolean, default=False, nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

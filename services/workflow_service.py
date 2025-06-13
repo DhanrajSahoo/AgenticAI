@@ -18,6 +18,7 @@ def create_workflow(db: Session, workflow_data_content: schema.WorkflowDataConte
     return schema.WorkflowResponse(
         id=db_workflow_obj.id,
         workflow_name=db_workflow_obj.name,
+        workflow_description=db_workflow_obj.description,
         nodes=ui_nodes_from_db,
         created_at=db_workflow_obj.created_at,
         updated_at=db_workflow_obj.updated_at
@@ -35,6 +36,7 @@ def get_workflow(db: Session, workflow_id: uuid.UUID) -> Optional[schema.Workflo
         return schema.WorkflowResponse(
             id=db_workflow_obj.id,
             workflow_name=db_workflow_obj.name,
+            workflow_description=db_workflow_obj.description or "",
             nodes=ui_nodes_from_db,
             created_at=db_workflow_obj.created_at,
             updated_at=db_workflow_obj.updated_at
@@ -54,6 +56,7 @@ def list_workflows(db: Session, payload: schema.WorkflowListPayload) -> List[sch
             schema.WorkflowResponse(
                 id=wf.id,
                 workflow_name=wf.name,
+                workflow_description=wf.description or "",
                 nodes=ui_nodes_from_db,
                 created_at=wf.created_at,
                 updated_at=wf.updated_at
@@ -77,6 +80,7 @@ def update_workflow(
         return schema.WorkflowResponse(
             id=updated_db_workflow.id,
             workflow_name=updated_db_workflow.name,
+            workflow_description=updated_db_workflow.description,
             nodes=ui_nodes_from_db,
             created_at=updated_db_workflow.created_at,
             updated_at=updated_db_workflow.updated_at

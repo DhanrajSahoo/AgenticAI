@@ -10,6 +10,7 @@ def create_workflow(db: Session, workflow_payload_data: workflows_schema.Workflo
     # workflow_create_data contains workflow_name and nodes
     db_workflow = db_models.DBWorkflow(
         name=workflow_payload_data.workflow_name,
+        description=workflow_payload_data.workflow_description,
         workflow_data={"nodes": [node.model_dump() for node in workflow_payload_data.nodes]},
         is_deleted=False
     )
@@ -39,6 +40,7 @@ def update_workflow(
     if db_workflow:
         if workflow_update_data.workflow_name:
             db_workflow.name = workflow_update_data.workflow_name
+            db_workflow.description = workflow_update_data.workflow_description
 
         if workflow_update_data.nodes is not None:
             db_workflow.workflow_data = {
