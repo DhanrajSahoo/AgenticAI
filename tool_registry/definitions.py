@@ -111,7 +111,7 @@ PREDEFINED_TOOLS_CONFIG = {
         }
     },
     "PdfSearchTool": {
-        "name": "Transcribe Audio",
+        "name": "PdfSearchTool",
         "description": "Tool for transcribing audio to text using OpenAI Whisper.",
         "class": PDFQueryTool,
         "parameters_schema": {
