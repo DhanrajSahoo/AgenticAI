@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 access_key = Config.access_key
 secret_key = Config.secret_key
 
-s3 = boto3.client('s3')
+s3 = boto3.client('s3',aws_access_key_id=access_key,aws_secret_access_key=secret_key,region_name='us-east-1')
 
 def upload_pdf_to_s3_direct(file: UploadFile, bucket_name: str, s3_key: str) -> str:
     s3.upload_fileobj(file.file, bucket_name, s3_key)
