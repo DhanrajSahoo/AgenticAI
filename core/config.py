@@ -89,6 +89,8 @@ class Config(object):
     user = 'postgres'
     password = '123#'
     openai_key = db_cred.get('Open_AI_key')
+    access_key = db_cred.get('access_key')
+    secret_key = db_cred.get('secret_key')
 
 
 app_config = {
