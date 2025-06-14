@@ -1,6 +1,7 @@
 import os
 import logging
 import tempfile
+import requests
 from io import BytesIO
 from typing import List
 from sqlalchemy.orm import Session
@@ -125,7 +126,7 @@ async def upload_file(files: List[UploadFile] = File(...),db: Session = Depends(
 
 
 @router.get("/get_files/", status_code=201)
-def fetch_file_url(payload: FileQuery, db: Session = Depends(get_db_session), requests=None):
+def fetch_file_url(payload: FileQuery, db: Session = Depends(get_db_session)):
     try:
         s3_url = get_file_url_by_name(db, payload.file_name)
         logger.info(f"after s3 url { s3_url}")
