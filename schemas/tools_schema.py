@@ -25,4 +25,7 @@ class FileCreate(BaseModel):
     file_url: str
 
 class FileQuery(BaseModel):
+    file_name: Optional[str] = None
+
+class FileDelete(BaseModel):
     file_name : str

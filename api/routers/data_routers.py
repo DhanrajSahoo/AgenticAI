@@ -14,9 +14,9 @@ from core.config import Config
 from db.database import get_db_session
 from data.docs import EmbeddingsProcessor
 from schemas import workflows_schema as schema
-from schemas.tools_schema import FileCreate, FileQuery
+from schemas.tools_schema import FileCreate, FileQuery, FileDelete
 from services.aws_services import upload_pdf_to_s3_direct
-from db.crud import create_file_record, get_file_url_by_name
+from db.crud import create_file_record, get_file_url_by_name, delete_file_from_db_and_s3
 from services.aws_services import CloudWatchLogHandler
 
 logger = logging.getLogger(__name__)
@@ -156,3 +156,14 @@ def fetch_file_url(payload: FileQuery, db: Session = Depends(get_db_session)):
     except Exception as e:
         logger.info(f"error{e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch the url: {str(e)}")
+
+@router.delete("/delete-file/")
+def delete_file(payload: FileDelete, db: Session = Depends(get_db_session)):
+    bucket_name = "apexon-agentic-ai"
+
+    success = delete_file_from_db_and_s3(db, payload.file_name, bucket_name)
+
+    if not success:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return {"message": f"File '{payload.file_name}' deleted from DB and S3."}

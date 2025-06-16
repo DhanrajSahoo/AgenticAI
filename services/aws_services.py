@@ -1,20 +1,43 @@
 import boto3
 import logging
+from db.models import Files
 from fastapi import UploadFile
 from core.config import Config
+
+from sqlalchemy.orm import Session
 from botocore.exceptions import ClientError
+
 
 logger = logging.getLogger(__name__)
 
+policy_access_key = Config.policy_access_key
+policy_secret_key = Config.policy_secret_key
 access_key = Config.access_key
 secret_key = Config.secret_key
 
-s3 = boto3.client('s3',aws_access_key_id=access_key,aws_secret_access_key=secret_key,region_name='us-east-1')
+s3 = boto3.client("s3",aws_access_key_id=policy_access_key,aws_secret_access_key=policy_secret_key,region_name='us-east-1')
 
 def upload_pdf_to_s3_direct(file: UploadFile, bucket_name: str, s3_key: str) -> str:
     s3.upload_fileobj(file.file, bucket_name, s3_key)
     public_url = f"https://{bucket_name}.s3.amazonaws.com/{s3_key}"
     return public_url
+
+def delete_file_from_db_and_s3(db: Session, file_name: str, bucket_name: str) -> bool:
+    # Fetch file record from DB
+    file_record = db.query(Files).filter(Files.file_name == file_name).first()
+
+    if not file_record:
+        return False
+    # Extract S3 key (filename in this case)
+    s3_key = file_record.file_name
+    # Delete from S3
+    s3.delete_object(Bucket=bucket_name, Key=s3_key)
+
+    # Delete from DB
+    db.delete(file_record)
+    db.commit()
+
+    return True
 
 class CloudWatchLogHandler(logging.Handler):
     def __init__(self, log_group, stream_name, aws_region='us-east-1'):

@@ -91,6 +91,8 @@ class Config(object):
     openai_key = db_cred.get('Open_AI_key')
     access_key = db_cred.get('access_key')
     secret_key = db_cred.get('secret_key')
+    policy_access_key = db_cred.get('policy_access_key')
+    policy_secret_key = db_cred.get('policy_secret_key')
 
 
 app_config = {
