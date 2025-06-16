@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, Depends,File, UploadFile
 from crewai_tools import FileReadTool, CSVSearchTool, PDFSearchTool
 #from validators import file_validation
 
-
+from db.models import Files
 from core.config import Config
 from db.database import get_db_session
 from data.docs import EmbeddingsProcessor
@@ -78,7 +78,7 @@ async def upload_file(files: List[UploadFile] = File(...),db: Session = Depends(
                 )
                 create_file_record(db, file)
                 logger.info(f"create file done")
-                logger.info({"Message": "PDF File uploaded successfully!"})
+                #logger.info({"Message": "PDF File uploaded successfully!"})
                 return {"Message": "PDF File uploaded successfully!"}
             elif f.filename[-4:] == '.wav':
                 public_url = upload_pdf_to_s3_direct(
@@ -118,7 +118,7 @@ async def upload_file(files: List[UploadFile] = File(...),db: Session = Depends(
                 )
                 create_file_record(db, file)
                 return {"Message": "Word File uploaded successfully!"}
-        logger.info({"Message": text})
+        #logger.info({"Message": text})
         return {"Message": text}
     except Exception as e:
         logger.info(f"while uploading file: {e}", exc_info=True)
@@ -128,8 +128,13 @@ async def upload_file(files: List[UploadFile] = File(...),db: Session = Depends(
 @router.get("/get_files/", status_code=201)
 def fetch_file_url(payload: FileQuery, db: Session = Depends(get_db_session)):
     try:
+        # If file_name is not provided, return all file names
+        if not payload.file_name:
+            file_names = db.query(Files.file_name).all()
+            return {"file_names": [f[0] for f in file_names]}  # unpack tuples
+
+        # Else, proceed with download logic
         s3_url = get_file_url_by_name(db, payload.file_name)
-        logger.info(f"after s3 url { s3_url}")
         response = requests.get(s3_url, stream=True)
         response.raise_for_status()
 
@@ -146,7 +151,7 @@ def fetch_file_url(payload: FileQuery, db: Session = Depends(get_db_session)):
                 f.write(chunk)
         if not s3_url:
             raise HTTPException(status_code=404, detail="File not found")
-        logger.info({"file_name": payload.file_name, "file_url": tmp_file_path})
+        #logger.info({"file_name": payload.file_name, "file_url": tmp_file_path})
         return {"file_name": payload.file_name, "file_url": tmp_file_path}
     except Exception as e:
         logger.info(f"error{e}")
