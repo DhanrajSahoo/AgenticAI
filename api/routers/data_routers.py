@@ -5,14 +5,14 @@ import requests
 from io import BytesIO
 from typing import List
 from sqlalchemy.orm import Session
-from fastapi import APIRouter, HTTPException, Depends,File, UploadFile
+from fastapi import APIRouter, HTTPException, Depends,File, UploadFile, Form
 from crewai_tools import FileReadTool, CSVSearchTool, PDFSearchTool
 #from validators import file_validation
 
 from db.models import Files
 from core.config import Config
 from db.database import get_db_session
-from data.docs import EmbeddingsProcessor
+from db.vector_embeddings import Embeddings
 from schemas import workflows_schema as schema
 from schemas.tools_schema import FileCreate, FileQuery, FileDelete
 from services.aws_services import upload_pdf_to_s3_direct
@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 handler = CloudWatchLogHandler('agentic-ai', 'agentic-ai')
 logger.addHandler(handler)
+embed  = Embeddings()
 
 async def save_upload_to_tempfile(
     upload: UploadFile,
@@ -55,7 +56,7 @@ router = APIRouter(
     tags=["Data"]
 )
 #'sentence-transformers/all-MiniLM-L6-v2',
-embed = EmbeddingsProcessor(db_config=Config)
+#embed = EmbeddingsProcessor(db_config=Config)
 
 
 @router.post("/upload/", status_code=201)
@@ -167,3 +168,24 @@ def delete_file(payload: FileDelete, db: Session = Depends(get_db_session)):
         raise HTTPException(status_code=404, detail="File not found")
 
     return {"message": f"File '{payload.file_name}' deleted from DB and S3."}
+
+@router.post("/similar-text/")
+async def get_similar_text(prompt: str = Form(...),
+    vector_search_engine: str = Form(...),files: List[UploadFile] = File(...)):
+    try:
+        content = "\n"
+        for f in files:
+            path =await save_upload_to_tempfile(f)
+            if f.filename[-4:] == '.pdf':
+                raw_text = embed._extract_pdf_text(path)
+                content+=raw_text
+
+            elif f.filename[-5:] == '.docx':
+                raw_text = embed._extract_docx_text(path)
+                content += raw_text
+
+        similar_text = embed.provide_similar_txt(texts=content,prompt=prompt,search_tool=vector_search_engine)
+
+        return {"SimilarText": f"{similar_text}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get the similar text: {str(e)}")
