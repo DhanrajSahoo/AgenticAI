@@ -1,5 +1,3 @@
-import pdb
-
 from pydantic import BaseModel, Field
 from crewai.tools import BaseTool
 from dotenv import load_dotenv

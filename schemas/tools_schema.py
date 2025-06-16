@@ -29,3 +29,7 @@ class FileQuery(BaseModel):
 
 class FileDelete(BaseModel):
     file_name : str
+
+class SemanticSearch(BaseModel):
+    prompt : str
+    vector_search_engine: str
