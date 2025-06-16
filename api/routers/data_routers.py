@@ -16,8 +16,8 @@ from data.docs import EmbeddingsProcessor
 from schemas import workflows_schema as schema
 from schemas.tools_schema import FileCreate, FileQuery, FileDelete
 from services.aws_services import upload_pdf_to_s3_direct
-from db.crud import create_file_record, get_file_url_by_name, delete_file_from_db_and_s3
-from services.aws_services import CloudWatchLogHandler
+from db.crud import create_file_record, get_file_url_by_name
+from services.aws_services import CloudWatchLogHandler, delete_file_from_db_and_s3
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
