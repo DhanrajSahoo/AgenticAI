@@ -109,6 +109,12 @@ PREDEFINED_TOOLS_CONFIG = {
                 "label": "Audio File Path",
                 "required": True,
                 "description": "Full path to the audio file (e.g., /path/to/audio/meeting1.mp3). Agent must provide this."
+            },
+            "upload_button": {
+                "type": "file",
+                "label": "Upload-Button",
+                "required": True,
+                "description": "Button to upload the audion file"
             }
         }
     },
