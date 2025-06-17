@@ -6,13 +6,19 @@ from schemas import workflows_schema as ui_schema
 from tool_registry.registry import get_tool_instance
 from core.config import settings
 
-from core.config import Config
+from core.config import Config,db_cred
 
 os.environ["OPENAI_API_KEY"] = Config.openai_key
+os.environ["AWS_ACCESS_KEY_ID"] = db_cred.get("access_key")
+os.environ["AWS_SECRET_ACCESS_KEY"] = db_cred.get("secret_key")
+os.environ["AWS_REGION"] = "us-east-1"
+os.environ["SERPER_API_KEY"]
+
 
 from crewai import Agent, Task, Crew, Process
+from crewai import LLM as CrewLLM
 from langchain_openai import ChatOpenAI
-
+bedrock_model_prefixes = ["bedrock/anthropic.", "bedrock/amazon.", "bedrock/cohere."]
 
 class CrewBuilderError(Exception):
     pass
@@ -76,23 +82,28 @@ class CrewBuilder:
                                 f"Failed to instantiate tool '{tool_data.tool_name}' for agent '{agent_data.agent_name}': {e}")
 
                 agent_llm = self.default_llm
-                llm_params_to_override = {}
-
                 if agent_data.agent_model and agent_data.agent_model.strip():
-                    llm_params_to_override['model_name'] = agent_data.agent_model
+                    model_name = agent_data.agent_model.strip()
 
-                if agent_data.agent_temprature is not None:
-                    llm_params_to_override['temperature'] = agent_data.agent_temprature
-
-                if llm_params_to_override:
-                    final_model_name = llm_params_to_override.get('model_name', self.default_llm.model_name)
-                    final_temperature = llm_params_to_override.get('temperature', self.default_llm.temperature)
-
-                    agent_llm = ChatOpenAI(
-                        openai_api_key=settings.OPENAI_API_KEY,
-                        model_name=final_model_name,
-                        temperature=final_temperature
-                    )
+                    # Check if the model is a Bedrock model
+                    if any(model_name.startswith(prefix) for prefix in bedrock_model_prefixes):
+                        # Use CrewAI's LLM wrapper for Bedrock
+                        agent_llm = CrewLLM(
+                            model=model_name,
+                            temperature=agent_data.agent_temprature or 0.7,
+                            # config={
+                            #     "aws_access_key_id": settings.access_key,
+                            #     "aws_secret_access_key": settings.secret_key,
+                            #     "region_name": 'us-east-1'
+                            # }
+                        )
+                    else:
+                        # Assume it's an OpenAI model
+                        agent_llm = ChatOpenAI(
+                            openai_api_key=settings.OPENAI_API_KEY,
+                            model_name=model_name,
+                            temperature=agent_data.agent_temprature or 0.7
+                        )
 
                 # Handle agent_iteration
                 agent_max_iter_val = 5
