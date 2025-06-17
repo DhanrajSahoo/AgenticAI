@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from email.mime.text import MIMEText
 from core.config import settings
 import smtplib
+from typing import Type
 import os
 
 # Step 1: Define the input schema
@@ -16,7 +17,7 @@ class EmailSendSchema(BaseModel):
 class EmailSenderTool(BaseTool):
     name: str = "Email Sender Tool"
     description: str = "Sends a real email to the recipient using SMTP."
-    args_schema: str = EmailSendSchema
+    args_schema: Type[BaseModel] = EmailSendSchema
 
     def _run(self, recipient: str, subject: str, body: str) -> str:
         try:

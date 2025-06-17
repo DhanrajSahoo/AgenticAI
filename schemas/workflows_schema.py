@@ -28,6 +28,7 @@ class UITaskNodeData(UIRawNodeData):
 class UIToolNodeData(UIRawNodeData):
     tool_name: str # This is the tool_id from the registry, e.g., "serper_dev_tool"
     config_params: Optional[Dict[str, Any]] = None # Parameters for this tool instance
+    tool_inputs: Optional[Dict[str, Any]] = {}
 
 # UI Node Structure
 class UINode(BaseModel):

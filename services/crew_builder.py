@@ -8,6 +8,8 @@ from core.config import settings
 
 from core.config import Config,db_cred
 
+from tool_registry.tool_wrappers import StaticInputToolWrapper
+
 os.environ["OPENAI_API_KEY"] = Config.openai_key
 os.environ["AWS_ACCESS_KEY_ID"] = db_cred.get("access_key")
 os.environ["AWS_SECRET_ACCESS_KEY"] = db_cred.get("secret_key")
@@ -75,7 +77,18 @@ class CrewBuilder:
                             raise CrewBuilderError(f"Invalid data for tool node '{tool_ui_node.id}': {e.errors()}")
 
                         try:
+                            # tool_instance = get_tool_instance(tool_data.tool_name, tool_data.config_params)
+                            # agent_tools.append(tool_instance)
+                            tool_inputs = tool_data.tool_inputs if hasattr(tool_data, "tool_inputs") else {}
                             tool_instance = get_tool_instance(tool_data.tool_name, tool_data.config_params)
+                            if tool_inputs:
+                                try:
+                                    tool_instance = StaticInputToolWrapper(tool_instance, tool_inputs)
+                                except Exception as e:
+                                    raise CrewBuilderError(
+                                        f"Failed to wrap tool '{tool_data.tool_name}' with static inputs: {e}"
+                                    )
+
                             agent_tools.append(tool_instance)
                         except Exception as e:
                             raise CrewBuilderError(

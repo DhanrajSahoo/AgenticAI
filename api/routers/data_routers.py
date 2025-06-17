@@ -173,6 +173,7 @@ def delete_file(payload: FileDelete, db: Session = Depends(get_db_session)):
 async def get_similar_text(prompt: str = Form(...),
     vector_search_engine: str = Form(...),files: List[UploadFile] = File(...)):
     try:
+        logger.info(f"get similar text")
         content = "\n"
         for f in files:
             path =await save_upload_to_tempfile(f)
@@ -188,4 +189,5 @@ async def get_similar_text(prompt: str = Form(...),
 
         return {"SimilarText": f"{similar_text}"}
     except Exception as e:
+        logger.info(f"Failed to get the similar text: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get the similar text: {str(e)}")
