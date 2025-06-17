@@ -20,16 +20,3 @@ class ToolDefinition(BaseModel):
     class_name: Optional[str] = None
     parameters_schema: Optional[Dict[str, ToolParameterDetail]] = None
 
-class FileCreate(BaseModel):
-    file_name: str
-    file_url: str
-
-class FileQuery(BaseModel):
-    file_name: Optional[str] = None
-
-class FileDelete(BaseModel):
-    file_name : str
-
-class SemanticSearch(BaseModel):
-    prompt : str
-    vector_search_engine: str
