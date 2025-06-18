@@ -1,3 +1,5 @@
+import logging
+
 from sqlalchemy.orm import Session
 from typing import List, Optional, Any
 import uuid
@@ -5,6 +7,12 @@ import uuid
 from db import crud
 from schemas import workflows_schema as schema
 from .crew_builder import CrewBuilder, CrewBuilderError
+from services.aws_services import CloudWatchLogHandler
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = CloudWatchLogHandler('agentic-ai', 'agentic-ai')
+logger.addHandler(handler)
 
 
 def create_workflow(db: Session, workflow_data_content: schema.WorkflowDataContent) -> schema.WorkflowResponse:
@@ -100,6 +108,8 @@ def run_workflow_service(db: Session, workflow_id: uuid.UUID) -> schema.Workflow
 
         # CrewBuilder expects a list of UINodes
     builder = CrewBuilder(workflow_response_data.nodes)
+    logger.info(f"builder:{builder}")
+    logger.info(f"nodes:{workflow_response_data.nodes}")
     output = builder.build_and_run()
 
     return schema.WorkflowExecutionResult(
