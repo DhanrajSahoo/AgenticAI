@@ -134,6 +134,12 @@ PREDEFINED_TOOLS_CONFIG = {
                 "label": "question",
                 "required": True,
                 "description": "query to perform search in pdf file"
+            },
+            "upload_button": {
+                "type": "file",
+                "label": "Upload-Button",
+                "required": True,
+                "description": "Button to upload the audion file"
             }
         }
     },
@@ -153,6 +159,12 @@ PREDEFINED_TOOLS_CONFIG = {
                 "label": "question",
                 "required": True,
                 "description": "query to perform search in word file"
+            },
+            "upload_button": {
+                "type": "file",
+                "label": "Upload-Button",
+                "required": True,
+                "description": "Button to upload the audion file"
             }
         }
     },
@@ -172,6 +184,12 @@ PREDEFINED_TOOLS_CONFIG = {
                 "label": "question",
                 "required": True,
                 "description": "query to perform search in csv file"
+            },
+            "upload_button": {
+                "type": "file",
+                "label": "Upload-Button",
+                "required": True,
+                "description": "Button to upload the audion file"
             }
         }
     }
