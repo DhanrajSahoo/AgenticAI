@@ -74,46 +74,46 @@ def get_tool_instance(
     if isinstance(tool_id_from_workflow, int):
         actual_tool_string_id = get_string_id_from_numeric_id(tool_id_from_workflow)
         if not actual_tool_string_id:
-            raise ValueError(f"Invalid numeric tool ID '{tool_id_from_workflow}' received. No matching tool found.")
+            raise ValueError(f"Invalid numeric tool ID '{tool_id_from_workflow}' received.")
     elif isinstance(tool_id_from_workflow, str):
-        if tool_id_from_workflow not in PREDEFINED_TOOLS_CONFIG:
-            try:
-                numeric_id_attempt = int(tool_id_from_workflow)
-                actual_tool_string_id = get_string_id_from_numeric_id(numeric_id_attempt)
-                if not actual_tool_string_id:
-                    raise ValueError(f"Tool ID string '{tool_id_from_workflow}' is not a valid tool identifier "
-                                     f"and could not be mapped from a numeric ID.")
-            except ValueError:
-                raise ValueError(f"Tool ID string '{tool_id_from_workflow}' is not a valid tool identifier.")
-        else:
+        if tool_id_from_workflow in PREDEFINED_TOOLS_CONFIG:
             actual_tool_string_id = tool_id_from_workflow
+        else:
+            try:
+                numeric_id = int(tool_id_from_workflow)
+                actual_tool_string_id = get_string_id_from_numeric_id(numeric_id)
+                if not actual_tool_string_id:
+                    raise ValueError(f"Invalid tool ID string '{tool_id_from_workflow}'")
+            except ValueError:
+                raise ValueError(f"Tool ID string '{tool_id_from_workflow}' is not a valid identifier.")
     else:
         raise TypeError(f"tool_id_from_workflow must be str or int, got {type(tool_id_from_workflow)}")
 
     config_from_registry = PREDEFINED_TOOLS_CONFIG.get(actual_tool_string_id)
     if not config_from_registry:
-        raise ValueError(
-            f"Tool with mapped string id '{actual_tool_string_id}' not found in registry (this should not happen).")
+        raise ValueError(f"Tool '{actual_tool_string_id}' not found in registry.")
 
     ToolClass = config_from_registry["class"]
-    init_kwargs: Dict[str, Any] = {}
-    if config_params:
-        init_kwargs.update(config_params)
+    init_kwargs: Dict[str, Any] = config_params or {}
 
-    if actual_tool_string_id == "serper_dev_tool" and "serper_key" in init_kwargs:
-        init_kwargs["serper_api_key"] = init_kwargs.pop("serper_key")
+    # Safely check if ToolClass accepts kwargs (i.e., a config-enabled tool)
+    try:
+        sig = inspect.signature(ToolClass.__init__)
+        accepts_kwargs = any(
+            param.kind in [param.VAR_KEYWORD, param.KEYWORD_ONLY]
+            for param in sig.parameters.values()
+            if param.name != "self"
+        )
+    except Exception:
+        accepts_kwargs = False  # fallback: assume doesn't accept kwargs
 
     try:
-        return ToolClass(**init_kwargs)
+        if accepts_kwargs:
+            return ToolClass(**init_kwargs)
+        else:
+            return ToolClass()
     except Exception as e:
-        expected_params_info = ""
-        if hasattr(ToolClass, "__init__"):
-            try:
-                sig = inspect.signature(ToolClass.__init__)
-                expected_params_info = f"Expected constructor parameters for {ToolClass.__name__}: {sig}."
-            except Exception:
-                expected_params_info = f"Could not inspect constructor parameters for {ToolClass.__name__}."
-
+        expected_params_info = f"Expected constructor parameters for {ToolClass.__name__}: {sig}" if 'sig' in locals() else ""
         raise RuntimeError(
             f"Failed to instantiate tool '{actual_tool_string_id}'. "
             f"Provided config_params were: {init_kwargs}. "

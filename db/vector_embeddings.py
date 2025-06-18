@@ -1,16 +1,18 @@
+import os
+import shutil
 from typing import List
 from docx import Document
 from pypdf import PdfReader
-import faiss
-
+from chromadb.config import Settings
+from chromadb import PersistentClient
 from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
+
 
 from core.config import Config
 
 
 class Embeddings():
-    def __init__(self,max_chunk_len: int = 1024):
+    def __init__(self,max_chunk_len: int = 500):
         self.max_chunk_len = max_chunk_len
         self.model = ''
 
@@ -31,18 +33,29 @@ class Embeddings():
     def _chunk_text(self,text):
         chunks = []
         current_chunk = ""
-        for word in text.split():
-            if len(current_chunk) + len(word) + 1 <= self.max_chunk_len:
-                current_chunk += " " + word
-            else:
-                chunks.append(current_chunk.strip())
-                current_chunk = word
-        if current_chunk:
-            chunks.append(current_chunk.strip())
-        return chunks
+
+        # for word in text.split():
+        #     if len(current_chunk) + len(word) + 1 <= self.max_chunk_len:
+        #         current_chunk += " " + word
+        #     else:
+        #         chunks.append(current_chunk.strip())
+        #         current_chunk = word
+        # if current_chunk:
+        #     chunks.append(current_chunk.strip())
+        # return chunks
+        if isinstance(text, list):
+            text = " ".join(text)
+
+        words = text.split()
+        return [
+            " ".join(words[i:i + self.max_chunk_len])
+            for i in range(0, len(words), self.max_chunk_len)
+        ]
 
     def provide_similar_txt(self,texts,prompt,search_tool):
         chunks = self._chunk_text(texts)
+        if not chunks:
+            return "No text chunks available for comparison."
         # Step 2: Load model and encode texts
         model = SentenceTransformer("all-MiniLM-L6-v2")
         if search_tool == 'cosine':
@@ -87,6 +100,69 @@ class Embeddings():
                 # print(f"Rank {i+1} | Distance: {distances[0][i]:.4f}")
                 context +=chunks[idx]
             return context
+
+    def provide_similar_txt_chroma(self, texts, prompt, search_tool):
+        chunks = self._chunk_text(texts)
+        if not chunks:
+            return "No text chunks available for comparison."
+
+        # Load model
+        model = SentenceTransformer("all-MiniLM-L6-v2")
+
+        if search_tool == "chroma":
+            # Step 1: Set Chroma persist directory
+            persist_dir = "./chroma_db"
+            if os.path.exists(persist_dir):
+                shutil.rmtree(persist_dir)  # Clean up old vectors
+
+            client = PersistentClient(path=persist_dir, settings=Settings(anonymized_telemetry=False))
+            collection = client.get_or_create_collection("doc_chunks")
+
+            # Step 2: Embed text chunks
+            embeddings = model.encode(chunks).tolist()
+
+            # Step 3: Ingest into Chroma
+            for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+                collection.add(
+                    documents=[chunk],
+                    embeddings=[embedding],
+                    ids=[f"chunk-{i}"]
+                )
+
+            # Step 4: Embed the prompt
+            prompt_embedding = model.encode([prompt]).tolist()
+
+            # Step 5: Search top K
+            results = collection.query(
+                query_embeddings=prompt_embedding,
+                n_results=10
+            )
+
+            # Step 6: Combine results into context
+            context = "\n".join(results["documents"][0])
+            return context
+
+        elif search_tool == "cosine":
+            from sklearn.metrics.pairwise import cosine_similarity
+            text_embeddings = model.encode(chunks)
+            prompt_embedding = model.encode([prompt])
+            similarities = cosine_similarity(prompt_embedding, text_embeddings)[0]
+            top_indices = similarities.argsort()[::-1][:10]
+            context = "\n".join([chunks[idx] for idx in top_indices])
+            return context
+
+        elif search_tool == "faiss":
+            import faiss
+            text_embeddings = model.encode(chunks).astype("float32")
+            index = faiss.IndexFlatL2(text_embeddings.shape[1])
+            index.add(text_embeddings)
+            prompt_embedding = model.encode([prompt]).astype("float32")
+            distances, indices = index.search(prompt_embedding, 10)
+            context = "\n".join([chunks[idx] for idx in indices[0]])
+            return context
+
+        else:
+            return "Invalid search_tool selected."
 
     # def create_embeddings(self,file_path,file_extension):
     #     if file_extension == '.pdf':
