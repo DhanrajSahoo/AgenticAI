@@ -30,10 +30,13 @@ class PDFQueryTool(BaseTool):
     args_schema: Type[BaseModel] = PDFQuerySchema  # ✅ This is correct now
 
     def _run(self, pdf_path: str, query: str) -> str:
+        logger.info(f"query{query}, pdf_path:-{pdf_path}")
         texts = embed._extract_pdf_text(pdf_path)
         chunks = embed._chunk_text(texts)
         res = embed.provide_similar_txt_chroma(chunks, query, 'cosine')
+        logger.info(f"res{res}")
         result = f"Query:-{query}\n\nContext:-{res}"
+        logger.info(f"result:{result}")
         return result
 
     def run(self, input_data: PDFQuerySchema) -> str:
