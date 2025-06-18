@@ -7,7 +7,9 @@ from typing import Type
 from crewai_tools import PDFSearchTool
 from core.config import Config
 from services.aws_services import CloudWatchLogHandler
+from db.vector_embeddings import Embeddings
 
+embed = Embeddings()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 handler = CloudWatchLogHandler('agentic-ai', 'agentic-ai')
@@ -25,39 +27,14 @@ class PDFQueryTool(BaseTool):
     name: str = "PDF Query Tool"
     description: str = "Runs a query against a PDF using RAG and returns the result"
 
-    # <— annotate this field!
-    args_schema: Type[PDFQuerySchema] = PDFQuerySchema
+    args_schema: Type[BaseModel] = PDFQuerySchema  # ✅ This is correct now
 
     def _run(self, pdf_path: str, query: str) -> str:
-        if "OPENAI_API_KEY" not in os.environ:
-            raise RuntimeError("Please set OPENAI_API_KEY in env vars before using PDFQueryTool")
-        logger.info(f"inside tool going to run tool")
-
-        rag_tool = PDFSearchTool(
-            pdf=pdf_path,
-            config={
-                "llm": {
-                    "provider": "openai",
-                    "config": {
-                        "model": "gpt-4o",
-                        "temperature": 0.0,
-                    },
-                },
-                "embedder": {
-                    "provider": "openai",
-                    "config": {
-                        "model": "text-embedding-ada-002",
-                    },
-                },
-            },
-        )
-
-        try:
-            result = rag_tool._run(query)
-            logger.info(f"pdf result:{result}")
-            return result
-        except Exception as e:
-            return f"Query failed: {e}"
+        texts = embed._extract_pdf_text(pdf_path)
+        chunks = embed._chunk_text(texts)
+        res = embed.provide_similar_txt_chroma(chunks, query, 'cosine')
+        result = f"Query:-{query}\n\nContext:-{res}"
+        return result
 
     def run(self, input_data: PDFQuerySchema) -> str:
         return self._run(input_data.pdf_path, input_data.query)
