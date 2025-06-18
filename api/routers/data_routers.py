@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from fastapi import APIRouter, HTTPException, Depends,File, UploadFile, Form
 from crewai_tools import FileReadTool, CSVSearchTool, PDFSearchTool
 #from validators import file_validation
+import chromadb
 
 from db.models import Files
 from core.config import Config
@@ -191,3 +192,16 @@ async def get_similar_text(prompt: str = Form(...),
     except Exception as e:
         logger.info(f"Failed to get the similar text: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get the similar text: {str(e)}")
+
+@router.get("/clear-chroma/")
+def clear_chroma():
+    try:
+        client = chromadb.Client()
+        client.reset()
+        logger.info({"Message": f"Reset Chroma db successfully"})
+        return {"Message": f"Reset Chroma db successfully"}
+    except Exception as e:
+        logger.info(f"{e}e")
+        raise HTTPException(status_code=500, detail=f"Failed to clear chroma: {str(e)}")
+
+
