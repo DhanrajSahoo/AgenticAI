@@ -1,5 +1,6 @@
 import os
 import shutil
+import time
 from typing import List
 from docx import Document
 from pypdf import PdfReader
@@ -107,13 +108,17 @@ class Embeddings():
             return "No text chunks available for comparison."
 
         # Load model
-        model = SentenceTransformer("all-MiniLM-L6-v2")
+        model = model = SentenceTransformer(
+            "all-MiniLM-L6-v2",
+            tokenizer_kwargs={"clean_up_tokenization_spaces": True}
+        )
 
         if search_tool == "chroma":
             # Step 1: Set Chroma persist directory
             persist_dir = "./chroma_db"
             if os.path.exists(persist_dir):
                 shutil.rmtree(persist_dir)  # Clean up old vectors
+                time.sleep(2)
 
             client = PersistentClient(path=persist_dir, settings=Settings(anonymized_telemetry=False))
             collection = client.get_or_create_collection("doc_chunks")
