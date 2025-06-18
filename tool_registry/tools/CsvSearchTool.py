@@ -1,3 +1,5 @@
+import logging
+
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 import os
@@ -7,6 +9,12 @@ from core.config import Config
 os.environ["OPENAI_API_KEY"] = Config.openai_key
 # os.environ["OPENAI_API_KEY"] = Config.openai_key
 
+from services.aws_services import CloudWatchLogHandler
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = CloudWatchLogHandler('agentic-ai', 'agentic-ai')
+logger.addHandler(handler)
 
 class CsvQuerySchema(BaseModel):
     csv_path: str = Field(..., description="Path to the Word file")
@@ -22,6 +30,7 @@ class CsvQueryTool(BaseTool):
     def _run(self, csv_path: str, query: str) -> str:
         if "OPENAI_API_KEY" not in os.environ:
             raise RuntimeError("Please set OPENAI_API_KEY in env vars before using CSVQueryTool")
+        logger.info("inside csv tool going to run tool")
 
         rag_tool = CSVSearchTool(
             csv=csv_path,
@@ -43,7 +52,9 @@ class CsvQueryTool(BaseTool):
         )
 
         try:
-            return rag_tool._run(query)
+            result = rag_tool._run(query)
+            logger.info(f"result: {result}")
+            return result
         except Exception as e:
             return f"Query failed: {e}"
 

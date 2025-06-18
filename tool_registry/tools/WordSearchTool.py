@@ -1,3 +1,5 @@
+import logging
+
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 import os
@@ -6,6 +8,13 @@ from crewai_tools import DOCXSearchTool
 from core.config import Config
 os.environ["OPENAI_API_KEY"] = Config.openai_key
 # os.environ["OPENAI_API_KEY"] = Config.openai_key
+
+from services.aws_services import CloudWatchLogHandler
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = CloudWatchLogHandler('agentic-ai', 'agentic-ai')
+logger.addHandler(handler)
 
 
 class DocQuerySchema(BaseModel):
@@ -22,6 +31,7 @@ class DocQueryTool(BaseTool):
     def _run(self, doc_path: str, query: str) -> str:
         if "OPENAI_API_KEY" not in os.environ:
             raise RuntimeError("Please set OPENAI_API_KEY in env vars before using DOCQueryTool")
+        logger.info("inside word tool going to run")
 
         rag_tool = DOCXSearchTool(
             docx=doc_path,
@@ -43,7 +53,9 @@ class DocQueryTool(BaseTool):
         )
 
         try:
-            return rag_tool._run(query)
+            result = rag_tool._run(query)
+            logger.info(f"word tool result:{result}")
+            return result
         except Exception as e:
             return f"Query failed: {e}"
 
