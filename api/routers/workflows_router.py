@@ -9,11 +9,17 @@ from services import workflow_service
 from services.crew_builder import CrewBuilderError
 from db.database import get_db_session
 
+from services.aws_services import CloudWatchLogHandler
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = CloudWatchLogHandler('agentic-ai', 'agentic-ai')
+logger.addHandler(handler)
+
 router = APIRouter(
     prefix="/workflows",
     tags=["Workflows"]
 )
-logger = logging.getLogger(__name__)
 
 
 @router.post("/", response_model=schema.WorkflowResponse, status_code=201)
