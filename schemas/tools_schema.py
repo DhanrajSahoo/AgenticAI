@@ -31,5 +31,6 @@ class FileDelete(BaseModel):
     file_name : str
 
 class SemanticSearch(BaseModel):
-    prompt : str
-    vector_search_engine: str
+    prompt : Optional[str] = None
+    file_name: Optional[str] = None
+    file_path: Optional[str] = None

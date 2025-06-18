@@ -100,11 +100,30 @@ def delete_workflow(db: Session, workflow_id: uuid.UUID) -> bool:
     return crud.soft_delete_workflow(db=db, workflow_id=workflow_id)
 
 
-def run_workflow_service(db: Session, workflow_id: uuid.UUID) -> schema.WorkflowExecutionResult:
+def run_workflow_service(payload,db: Session, workflow_id: uuid.UUID) -> schema.WorkflowExecutionResult:
     workflow_response_data = get_workflow(db, workflow_id)
     if not workflow_response_data:
         # This case should be caught by the router, but defensive check
         raise ValueError(f"Workflow with ID {workflow_id} not found for execution.")
+
+    if payload.file_path:
+        for node in workflow_response_data.nodes:
+            if "tool_input" not in node.data and "tool_name" in node.data:
+                # Inject or overwrite the tool_inputs
+                node.data['tool_inputs'] = {
+                    "pdf_path": payload.file_path,
+                    "query": payload.prompt
+                }
+        if payload.prompt:
+            for node in workflow_response_data.nodes:
+                if 'tool_name' in node.data and node.data['tool_name'] == 'PdfSearchTool':
+                    # Check if tool_inputs exists, else initialize it
+                    if 'tool_inputs' not in node.data:
+                        node.data['tool_inputs'] = {}
+
+                    # Update the values as you want
+                    # node.data['tool_inputs']['pdf_path'] = '/your/new/path.pdf'
+                    node.data['tool_inputs']['query'] = payload.prompt
 
         # CrewBuilder expects a list of UINodes
     builder = CrewBuilder(workflow_response_data.nodes)

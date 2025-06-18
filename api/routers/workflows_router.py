@@ -8,6 +8,7 @@ from schemas import workflows_schema as schema
 from services import workflow_service
 from services.crew_builder import CrewBuilderError
 from db.database import get_db_session
+from schemas.tools_schema import SemanticSearch
 
 from services.aws_services import CloudWatchLogHandler
 
@@ -86,7 +87,7 @@ async def api_delete_workflow(
 
 
 @router.post("/{workflow_id}/run", response_model=schema.WorkflowExecutionResult)
-async def api_run_workflow(
+async def api_run_workflow(payload:SemanticSearch,
         workflow_id: uuid.UUID,
         db: Session = Depends(get_db_session)
 ):
@@ -98,7 +99,7 @@ async def api_run_workflow(
 
     try:
         logger.info(f"Running workflow: {existing_workflow.workflow_name}")
-        return workflow_service.run_workflow_service(db=db, workflow_id=workflow_id)
+        return workflow_service.run_workflow_service(payload, db=db, workflow_id=workflow_id)
     except CrewBuilderError as e:  # Catch specific builder errors
         logger.error(f"CrewBuilder error for workflow {workflow_id}: {e}", exc_info=True)
         raise HTTPException(status_code=400, detail=f"Workflow configuration error: {str(e)}")
