@@ -127,7 +127,7 @@ async def upload_file(files: List[UploadFile] = File(...),db: Session = Depends(
         raise HTTPException(status_code=500, detail=f"Failed to upload a file: {str(e)}")
 
 
-@router.get("/get_files/", status_code=201)
+@router.post("/get_files/", status_code=201)
 def fetch_file_url(payload: FileQuery, db: Session = Depends(get_db_session)):
     try:
         # If file_name is not provided, return all file names
