@@ -111,7 +111,7 @@ PREDEFINED_TOOLS_CONFIG = {
                 "description": "Full path to the audio file (e.g., /path/to/audio/meeting1.mp3). Agent must provide this."
             },
             "upload_button": {
-                "type": "file",
+                "type": "fileupload",
                 "label": "Upload-Button",
                 "required": True,
                 "description": "Button to upload the audion file"
@@ -136,7 +136,7 @@ PREDEFINED_TOOLS_CONFIG = {
                 "description": "query to perform search in pdf file"
             },
             "upload_button": {
-                "type": "file",
+                "type": "fileupload",
                 "label": "Upload-Button",
                 "required": True,
                 "description": "Button to upload the audion file"
@@ -161,7 +161,7 @@ PREDEFINED_TOOLS_CONFIG = {
                 "description": "query to perform search in word file"
             },
             "upload_button": {
-                "type": "file",
+                "type": "fileupload",
                 "label": "Upload-Button",
                 "required": True,
                 "description": "Button to upload the audion file"
@@ -186,7 +186,7 @@ PREDEFINED_TOOLS_CONFIG = {
                 "description": "query to perform search in csv file"
             },
             "upload_button": {
-                "type": "file",
+                "type": "fileupload",
                 "label": "Upload-Button",
                 "required": True,
                 "description": "Button to upload the audion file"
