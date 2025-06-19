@@ -1,3 +1,4 @@
+import logging
 from typing import List, Dict, Any, Optional, Set, Tuple
 from pydantic import ValidationError
 import os
@@ -21,6 +22,13 @@ from crewai import Agent, Task, Crew, Process
 from crewai import LLM as CrewLLM
 from langchain_openai import ChatOpenAI
 bedrock_model_prefixes = ["bedrock/anthropic.", "bedrock/amazon.", "bedrock/cohere."]
+
+from services.aws_services import CloudWatchLogHandler
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = CloudWatchLogHandler('agentic-ai', 'agentic-ai')
+logger.addHandler(handler)
 
 class CrewBuilderError(Exception):
     pass
@@ -65,66 +73,80 @@ class CrewBuilder:
                     raise CrewBuilderError(f"Invalid data for agent node '{ui_node.id}': {e.errors()}")
 
                 agent_tools = []
+                for source_node_id in ui_node.source:
+                    if self._get_node_type(source_node_id) == "tool":
+                        tool_ui_node = self.nodes_map.get(source_node_id)
+                        if not tool_ui_node:
+                            raise CrewBuilderError(
+                                f"Tool node '{source_node_id}' referenced by agent '{ui_node.id}' not found.")
+                        try:
+                            tool_data = ui_schema.UIToolNodeData.model_validate(tool_ui_node.data)
+                        except ValidationError as e:
+                            raise CrewBuilderError(f"Invalid data for tool node '{tool_ui_node.id}': {e.errors()}")
 
-                # Look for tool links in `source`, fallback to `parents` if none
-                tool_link_ids = ui_node.source if ui_node.source else ui_node.parents
+                        try:
+                            # tool_instance = get_tool_instance(tool_data.tool_name, tool_data.config_params)
+                            # agent_tools.append(tool_instance)
+                            tool_inputs = tool_data.tool_inputs if hasattr(tool_data, "tool_inputs") else {}
+                            tool_instance = get_tool_instance(tool_data.tool_name, tool_data.config_params)
+                            if tool_inputs:
+                                try:
+                                    tool_instance = StaticInputToolWrapper(tool_instance, tool_inputs)
+                                except Exception as e:
+                                    raise CrewBuilderError(
+                                        f"Failed to wrap tool '{tool_data.tool_name}' with static inputs: {e}"
+                                    )
 
-                for link_id in tool_link_ids:
-                    if self._get_node_type(link_id) != "tool":
-                        continue
+                            agent_tools.append(tool_instance)
+                        except Exception as e:
+                            raise CrewBuilderError(
+                                f"Failed to instantiate tool '{tool_data.tool_name}' for agent '{agent_data.agent_name}': {e}")
+                logger.info(f"agent_tools:{agent_tools}")
 
-                    tool_ui_node = self.nodes_map.get(link_id)
-                    if not tool_ui_node:
-                        raise CrewBuilderError(
-                            f"Tool node '{link_id}' referenced by agent '{ui_node.id}' not found."
-                        )
-                    try:
-                        tool_data = ui_schema.UIToolNodeData.model_validate(tool_ui_node.data)
-                    except ValidationError as e:
-                        raise CrewBuilderError(f"Invalid data for tool node '{tool_ui_node.id}': {e.errors()}")
-
-                    try:
-                        tool_inputs = tool_data.tool_inputs or {}
-                        tool_instance = get_tool_instance(tool_data.tool_name, tool_data.config_params)
-
-                        if tool_inputs:
-                            try:
-                                tool_instance = StaticInputToolWrapper(tool_instance, tool_inputs)
-                            except Exception as e:
-                                raise CrewBuilderError(
-                                    f"Failed to wrap tool '{tool_data.tool_name}' with static inputs: {e}"
-                                )
-
-                        agent_tools.append(tool_instance)
-
-                    except Exception as e:
-                        raise CrewBuilderError(
-                            f"Failed to instantiate tool '{tool_data.tool_name}' for agent "
-                            f"'{agent_data.agent_name}': {e}"
-                        )
-
-                # build the LLM for this agent
                 agent_llm = self.default_llm
                 if agent_data.agent_model and agent_data.agent_model.strip():
                     model_name = agent_data.agent_model.strip()
+
+                    # Check if the model is a Bedrock model
                     if any(model_name.startswith(prefix) for prefix in bedrock_model_prefixes):
-                        agent_llm = CrewLLM(model=model_name, temperature=agent_data.agent_temprature or 0.7)
+                        # Use CrewAI's LLM wrapper for Bedrock
+                        agent_llm = CrewLLM(
+                            model=model_name,
+                            temperature=agent_data.agent_temprature or 0.7,
+                            # config={
+                            #     "aws_access_key_id": settings.access_key,
+                            #     "aws_secret_access_key": settings.secret_key,
+                            #     "region_name": 'us-east-1'
+                            # }
+                        )
                     else:
+                        # Assume it's an OpenAI model
                         agent_llm = ChatOpenAI(
                             openai_api_key=Config.openai_key,
                             model_name=model_name,
                             temperature=agent_data.agent_temprature or 0.7
                         )
 
-                # handle agent_iteration parsing...
+                # Handle agent_iteration
                 agent_max_iter_val = 5
                 if agent_data.agent_iteration is not None:
-                    try:
-                        parsed = int(agent_data.agent_iteration)
-                        if parsed >= 1:
-                            agent_max_iter_val = parsed
-                    except Exception:
-                        pass  # keep default
+                    if isinstance(agent_data.agent_iteration, str):
+                        try:
+                            parsed_iter = int(agent_data.agent_iteration)
+                            if parsed_iter >= 1:
+                                agent_max_iter_val = parsed_iter
+                            else:
+                                print(
+                                    f"Warning: agent_iteration '{agent_data.agent_iteration}' is not >= 1. Using default {agent_max_iter_val}.")
+                        except ValueError:
+                            print(
+                                f"Warning: Could not convert agent_iteration string '{agent_data.agent_iteration}' to int. Using default {agent_max_iter_val}.")
+                    elif isinstance(agent_data.agent_iteration, int):
+                        if agent_data.agent_iteration >= 1:
+                            agent_max_iter_val = agent_data.agent_iteration
+                        else:
+                            print(
+                                f"Warning: agent_iteration {agent_data.agent_iteration} is not >= 1. Using default {agent_max_iter_val}.")
 
                 agent = Agent(
                     role=agent_data.agent_role,
@@ -137,6 +159,7 @@ class CrewBuilder:
                     max_iter=agent_max_iter_val,
                     cache=agent_data.agent_cache
                 )
+                logger.info(f"agent{agent}")
                 self.crew_agents.append(agent)
                 self.agent_node_to_instance_map[ui_node.id] = agent
 
@@ -274,6 +297,7 @@ class CrewBuilder:
         if not self.ordered_crew_tasks:
             return "Workflow has agents but no executable tasks defined, processed, or ordered. Cannot create a crew."
 
+
         crew = Crew(
             agents=self.crew_agents,
             tasks=self.ordered_crew_tasks,  # Use the topologically sorted list
@@ -290,10 +314,12 @@ class CrewBuilder:
 
             if not any(self._get_node_type(n.id) == "task" for n in self.ui_nodes):
                 if self.crew_agents:
+                    logger.info(f"crew_agents:{self.crew_agents}")
                     return "Workflow has agents defined, but no tasks. A crew requires tasks to run."
                 return "Workflow is empty or contains no tasks."
 
             raw_task_configs = self._instantiate_tasks_and_map_agents()  # Creates Task instances
+            logger.info(f"raw_task_configs:{raw_task_configs}")
 
             if not self.task_node_to_instance_map:  # No Task instances were successfully created
                 raise CrewBuilderError("Tasks were defined in the workflow, but none could be instantiated correctly.")

@@ -106,6 +106,7 @@ def run_workflow_service(payload,db: Session, workflow_id: uuid.UUID) -> schema.
         # This case should be caught by the router, but defensive check
         raise ValueError(f"Workflow with ID {workflow_id} not found for execution.")
 
+        # CrewBuilder expects a list of UINodes
     if payload.file_path:
         for node in workflow_response_data.nodes:
             if "tool_input" not in node.data and "tool_name" in node.data:
@@ -114,18 +115,16 @@ def run_workflow_service(payload,db: Session, workflow_id: uuid.UUID) -> schema.
                     "pdf_path": payload.file_path,
                     "query": payload.prompt
                 }
-        if payload.prompt:
-            for node in workflow_response_data.nodes:
-                if 'tool_name' in node.data and node.data['tool_name'] == 'PdfSearchTool':
-                    # Check if tool_inputs exists, else initialize it
-                    if 'tool_inputs' not in node.data:
-                        node.data['tool_inputs'] = {}
+    if payload.prompt:
+        for node in workflow_response_data.nodes:
+            if 'tool_name' in node.data and node.data['tool_name'] == 'PdfSearchTool':
+                # Check if tool_inputs exists, else initialize it
+                if 'tool_inputs' not in node.data:
+                    node.data['tool_inputs'] = {}
 
-                    # Update the values as you want
-                    # node.data['tool_inputs']['pdf_path'] = '/your/new/path.pdf'
-                    node.data['tool_inputs']['query'] = payload.prompt
-
-        # CrewBuilder expects a list of UINodes
+                # Update the values as you want
+                #node.data['tool_inputs']['pdf_path'] = '/your/new/path.pdf'
+                node.data['tool_inputs']['query'] = payload.prompt
     builder = CrewBuilder(workflow_response_data.nodes)
     logger.info(f"builder:{builder}")
     logger.info(f"nodes:{workflow_response_data.nodes}")
