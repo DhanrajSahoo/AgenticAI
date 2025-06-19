@@ -106,6 +106,11 @@ def run_workflow_service(payload,db: Session, workflow_id: uuid.UUID) -> schema.
         # This case should be caught by the router, but defensive check
         raise ValueError(f"Workflow with ID {workflow_id} not found for execution.")
 
+    for node in workflow_response_data.nodes:
+        # Identify agent or task nodes by prefix
+        if (node.id.startswith("agent-") or node.id.startswith("task-")) and not node.source:
+            node.source = list(node.parents)
+
         # CrewBuilder expects a list of UINodes
     if payload.file_path:
         for node in workflow_response_data.nodes:
