@@ -6,6 +6,8 @@ import os
 from typing import Type
 from crewai_tools import DOCXSearchTool
 from core.config import Config
+from db.vector_embeddings import Embeddings
+embed = Embeddings()
 os.environ["OPENAI_API_KEY"] = Config.openai_key
 # os.environ["OPENAI_API_KEY"] = Config.openai_key
 
@@ -25,39 +27,14 @@ class DocQuerySchema(BaseModel):
 class DocQueryTool(BaseTool):
     name: str = "DOC Query Tool"
     description: str = "Runs a query against a DOC using RAG and returns the result"
-
-    args_schema: Type[DocQuerySchema] = DocQuerySchema
+    args_schema: Type[BaseModel] = DocQuerySchema  # ✅ This is correct now
 
     def _run(self, doc_path: str, query: str) -> str:
-        if "OPENAI_API_KEY" not in os.environ:
-            raise RuntimeError("Please set OPENAI_API_KEY in env vars before using DOCQueryTool")
-        logger.info("inside word tool going to run")
-
-        rag_tool = DOCXSearchTool(
-            docx=doc_path,
-            config={
-                "llm": {
-                    "provider": "openai",
-                    "config": {
-                        "model": "gpt-4o",
-                        "temperature": 0.0,
-                    },
-                },
-                "embedder": {
-                    "provider": "openai",
-                    "config": {
-                        "model": "text-embedding-ada-002",
-                    },
-                },
-            },
-        )
-
-        try:
-            result = rag_tool._run(query)
-            logger.info(f"word tool result:{result}")
-            return result
-        except Exception as e:
-            return f"Query failed: {e}"
+        texts = embed._extract_docx_text(doc_path)
+        chunks = embed._chunk_text(texts)
+        res = embed.provide_similar_txt_chroma(chunks, query, 'cosine')
+        result = f"Query:-{query}\n\nContext:-{res}"
+        return result
 
     def run(self, input_data: DocQuerySchema) -> str:
         return self._run(input_data.doc_path, input_data.query)
