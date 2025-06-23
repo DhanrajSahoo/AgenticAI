@@ -65,101 +65,104 @@ class CrewBuilder:
         return None
 
     def _instantiate_agents_with_tools(self):
-        for ui_node in self.ui_nodes:
-            if self._get_node_type(ui_node.id) == "agent":
-                try:
-                    agent_data = ui_schema.UIAgentNodeData.model_validate(ui_node.data)
-                except ValidationError as e:
-                    raise CrewBuilderError(f"Invalid data for agent node '{ui_node.id}': {e.errors()}")
+        try:
+            for ui_node in self.ui_nodes:
+                if self._get_node_type(ui_node.id) == "agent":
+                    try:
+                        agent_data = ui_schema.UIAgentNodeData.model_validate(ui_node.data)
+                    except ValidationError as e:
+                        raise CrewBuilderError(f"Invalid data for agent node '{ui_node.id}': {e.errors()}")
 
-                agent_tools = []
-                for source_node_id in ui_node.source:
-                    if self._get_node_type(source_node_id) == "tool":
-                        tool_ui_node = self.nodes_map[source_node_id]
+                    agent_tools = []
+                    for source_node_id in ui_node.source:
+                        if self._get_node_type(source_node_id) == "tool":
+                            tool_ui_node = self.nodes_map[source_node_id]
 
-                        try:
-                            tool_data = ui_schema.UIToolNodeData.model_validate(tool_ui_node.data)
-                        except ValidationError as e:
-                            raise CrewBuilderError(f"Invalid data for tool node '{tool_ui_node.id}': {e.errors()}")
-
-                        # instantiate the tool class itself
-                        base = get_tool_instance(tool_data.tool_name, tool_data.config_params)
-
-                        # now pull _only_ the dict under "tool_inputs"
-                        raw = tool_ui_node.data.get("tool_inputs")
-                        tool_inputs = raw.copy() if isinstance(raw, dict) else {}
-
-                        # if there really are inputs, wrap them
-                        if tool_inputs:
                             try:
-                                base = StaticInputToolWrapper(base, tool_inputs)
-                            except Exception as e:
-                                raise CrewBuilderError(
-                                    f"Failed to wrap tool '{tool_data.tool_name}' with static inputs: {e}"
-                                )
+                                tool_data = ui_schema.UIToolNodeData.model_validate(tool_ui_node.data)
+                            except ValidationError as e:
+                                raise CrewBuilderError(f"Invalid data for tool node '{tool_ui_node.id}': {e.errors()}")
 
-                        agent_tools.append(base)
-                logger.info(f"agent_tools:{agent_tools}")
+                            # instantiate the tool class itself
+                            base = get_tool_instance(tool_data.tool_name, tool_data.config_params)
 
-                agent_llm = self.default_llm
-                if agent_data.agent_model and agent_data.agent_model.strip():
-                    model_name = agent_data.agent_model.strip()
+                            # now pull _only_ the dict under "tool_inputs"
+                            raw = tool_ui_node.data.get("tool_inputs")
+                            tool_inputs = raw.copy() if isinstance(raw, dict) else {}
 
-                    # Check if the model is a Bedrock modelx
-                    if any(model_name.startswith(prefix) for prefix in bedrock_model_prefixes):
-                        # Use CrewAI's LLM wrapper for Bedrock
-                        agent_llm = CrewLLM(
-                            model=model_name,
-                            temperature=agent_data.agent_temprature or 0.7,
-                            # config={
-                            #     "aws_access_key_id": settings.access_key,
-                            #     "aws_secret_access_key": settings.secret_key,
-                            #     "region_name": 'us-east-1'
-                            # }
-                        )
-                    else:
-                        # Assume it's an OpenAI model
-                        agent_llm = ChatOpenAI(
-                            openai_api_key=Config.openai_key,
-                            model_name=model_name,
-                            temperature=agent_data.agent_temprature or 0.7
-                        )
+                            # if there really are inputs, wrap them
+                            if tool_inputs:
+                                try:
+                                    base = StaticInputToolWrapper(base, tool_inputs)
+                                except Exception as e:
+                                    raise CrewBuilderError(
+                                        f"Failed to wrap tool '{tool_data.tool_name}' with static inputs: {e}"
+                                    )
 
-                # Handle agent_iteration
-                agent_max_iter_val = 5
-                if agent_data.agent_iteration is not None:
-                    if isinstance(agent_data.agent_iteration, str):
-                        try:
-                            parsed_iter = int(agent_data.agent_iteration)
-                            if parsed_iter >= 1:
-                                agent_max_iter_val = parsed_iter
+                            agent_tools.append(base)
+                    logger.info(f"agent_tools:{agent_tools}")
+
+                    agent_llm = self.default_llm
+                    if agent_data.agent_model and agent_data.agent_model.strip():
+                        model_name = agent_data.agent_model.strip()
+
+                        # Check if the model is a Bedrock modelx
+                        if any(model_name.startswith(prefix) for prefix in bedrock_model_prefixes):
+                            # Use CrewAI's LLM wrapper for Bedrock
+                            agent_llm = CrewLLM(
+                                model=model_name,
+                                temperature=agent_data.agent_temprature or 0.7,
+                                # config={
+                                #     "aws_access_key_id": settings.access_key,
+                                #     "aws_secret_access_key": settings.secret_key,
+                                #     "region_name": 'us-east-1'
+                                # }
+                            )
+                        else:
+                            # Assume it's an OpenAI model
+                            agent_llm = ChatOpenAI(
+                                openai_api_key=Config.openai_key,
+                                model_name=model_name,
+                                temperature=agent_data.agent_temprature or 0.7
+                            )
+
+                    # Handle agent_iteration
+                    agent_max_iter_val = 5
+                    if agent_data.agent_iteration is not None:
+                        if isinstance(agent_data.agent_iteration, str):
+                            try:
+                                parsed_iter = int(agent_data.agent_iteration)
+                                if parsed_iter >= 1:
+                                    agent_max_iter_val = parsed_iter
+                                else:
+                                    print(
+                                        f"Warning: agent_iteration '{agent_data.agent_iteration}' is not >= 1. Using default {agent_max_iter_val}.")
+                            except ValueError:
+                                print(
+                                    f"Warning: Could not convert agent_iteration string '{agent_data.agent_iteration}' to int. Using default {agent_max_iter_val}.")
+                        elif isinstance(agent_data.agent_iteration, int):
+                            if agent_data.agent_iteration >= 1:
+                                agent_max_iter_val = agent_data.agent_iteration
                             else:
                                 print(
-                                    f"Warning: agent_iteration '{agent_data.agent_iteration}' is not >= 1. Using default {agent_max_iter_val}.")
-                        except ValueError:
-                            print(
-                                f"Warning: Could not convert agent_iteration string '{agent_data.agent_iteration}' to int. Using default {agent_max_iter_val}.")
-                    elif isinstance(agent_data.agent_iteration, int):
-                        if agent_data.agent_iteration >= 1:
-                            agent_max_iter_val = agent_data.agent_iteration
-                        else:
-                            print(
-                                f"Warning: agent_iteration {agent_data.agent_iteration} is not >= 1. Using default {agent_max_iter_val}.")
+                                    f"Warning: agent_iteration {agent_data.agent_iteration} is not >= 1. Using default {agent_max_iter_val}.")
 
-                agent = Agent(
-                    role=agent_data.agent_role,
-                    goal=agent_data.agent_goal,
-                    backstory=agent_data.agent_backstory,
-                    verbose=agent_data.agent_verbose,
-                    allow_delegation=agent_data.agent_delegation,
-                    tools=agent_tools,
-                    llm=agent_llm,
-                    max_iter=agent_max_iter_val,
-                    cache=agent_data.agent_cache
-                )
-                logger.info(f"agent{agent}")
-                self.crew_agents.append(agent)
-                self.agent_node_to_instance_map[ui_node.id] = agent
+                    agent = Agent(
+                        role=agent_data.agent_role,
+                        goal=agent_data.agent_goal,
+                        backstory=agent_data.agent_backstory,
+                        verbose=agent_data.agent_verbose,
+                        allow_delegation=agent_data.agent_delegation,
+                        tools=agent_tools,
+                        llm=agent_llm,
+                        max_iter=agent_max_iter_val,
+                        cache=agent_data.agent_cache
+                    )
+                    logger.info(f"agent{agent}")
+                    self.crew_agents.append(agent)
+                    self.agent_node_to_instance_map[ui_node.id] = agent
+        except Exception as e:
+            logger.info(f"error at _instantiate_agents_with_tools {e}")
 
     def _instantiate_tasks_and_map_agents(self) -> Dict[str, Dict[str, Any]]:
         """
@@ -326,4 +329,4 @@ class CrewBuilder:
             return self._create_and_kickoff_crew()
 
         except CrewBuilderError as e:
-            raise
+            logger.info(f"error at build and run {e}")
