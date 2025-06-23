@@ -5,30 +5,28 @@ from pydantic import BaseModel
 
 class StaticInputToolWrapper(BaseTool):
     def __init__(self, tool_instance: BaseTool, static_inputs: Dict[str, Any]):
-        # Determine raw_schema
-        raw_schema = tool_instance.args_schema
+        # 1) grab the original schema class
+        schema_cls = getattr(tool_instance, "args_schema", None)
+        if not (isinstance(schema_cls, type) and issubclass(schema_cls, BaseModel)):
+            raise TypeError(f"Wrapped tool has invalid args_schema: {schema_cls!r}")
 
-        # Distinguish between a Pydantic model class vs a function returning it
-        if isinstance(raw_schema, type) and issubclass(raw_schema, BaseModel):
-            schema_cls: Type[BaseModel] = raw_schema
-        elif callable(raw_schema):
-            schema_cls = raw_schema()
-        else:
-            raise TypeError(f"Cannot resolve args_schema from {raw_schema}")
-
-        # Initialize BaseTool with correct schema
+        # 2) initialize the BaseTool with the same schema class
         super().__init__(
             name=tool_instance.name,
             description=tool_instance.description,
             args_schema=schema_cls
         )
 
-        self._wrapped_tool = tool_instance
+        # 3) keep references
+        self._wrapped_tool  = tool_instance
         self._static_inputs = static_inputs
 
-    def _run(self, *args, **kwargs) -> str:
-        schema_instance = self.args_schema(**self._static_inputs)
-        return self._wrapped_tool.run(schema_instance)
+    def _run(self, *args: Any, **kwargs: Any) -> str:
+        # Validate the static inputs exactly once here
+        validated = self.args_schema(**self._static_inputs)
+        # Delegate to the real tool
+        return self._wrapped_tool.run(validated)
 
     def run(self, input_data: Optional[BaseModel] = None) -> str:
+        # ignore any incoming input_data—always use your static_inputs
         return self._run()

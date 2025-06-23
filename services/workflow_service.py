@@ -100,52 +100,47 @@ def delete_workflow(db: Session, workflow_id: uuid.UUID) -> bool:
     return crud.soft_delete_workflow(db=db, workflow_id=workflow_id)
 
 
-def run_workflow_service(payload,db: Session, workflow_id: uuid.UUID) -> schema.WorkflowExecutionResult:
-    workflow_response_data = get_workflow(db, workflow_id)
-    if not workflow_response_data:
-        # This case should be caught by the router, but defensive check
-        raise ValueError(f"Workflow with ID {workflow_id} not found for execution.")
+def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema.WorkflowExecutionResult:
+    workflow = get_workflow(db, workflow_id)
+    if not workflow:
+        raise ValueError(f"Workflow {workflow_id} not found")
 
-    for node in workflow_response_data.nodes:
-        # Identify agent or task nodes by prefix
+    # 1) Auto-populate `source` from `parents`
+    for node in workflow.nodes:
         if (node.id.startswith("agent-") or node.id.startswith("task-")) and not node.source:
             node.source = list(node.parents)
 
-        # CrewBuilder expects a list of UINodes
-    if payload.file_path:
-        if payload.file_path[-4:] == '.pdf':
-            for node in workflow_response_data.nodes:
-                if "tool_input" not in node.data and "tool_name" in node.data:
-                    # Inject or overwrite the tool_inputs
-                    node.data['tool_inputs'] = {
-                        "pdf_path": payload.file_path,
-                        "query": payload.prompt
-                    }
-        elif payload.file_path[-5:] == '.docx':
-            for node in workflow_response_data.nodes:
-                if "tool_input" not in node.data and "tool_name" in node.data:
-                    # Inject or overwrite the tool_inputs
-                    node.data['tool_inputs'] = {
-                        "doc_path": payload.file_path,
-                        "query": payload.prompt
-                    }
-    if payload.prompt:
-        for node in workflow_response_data.nodes:
-            if 'tool_name' in node.data:  # and node.data['tool_name'] == 'PdfSearchTool'
-                # Check if tool_inputs exists, else initialize it
-                if 'tool_inputs' not in node.data:
-                    node.data['tool_inputs'] = {}
+    # 2) Inject tool_inputs for CSV / PDF / RAG
+    for node in workflow.nodes:
+        name = node.data.get("tool_name")
+        if not name:
+            continue
 
-                # Update the values as you want
-                # node.data['tool_inputs']['pdf_path'] = '/your/new/path.pdf'
-                node.data['tool_inputs']['query'] = payload.prompt
-    builder = CrewBuilder(workflow_response_data.nodes)
-    logger.info(f"builder:{builder}")
-    logger.info(f"nodes:{workflow_response_data.nodes}")
-    output = builder.build_and_run()
+        node.data.setdefault("tool_inputs", {})
 
+        # always inject the user prompt if present
+        if payload.prompt:
+            node.data["tool_inputs"]["query"] = payload.prompt
+
+        # CSV
+        if name in ("CsvSearchTool", "CSV Query Tool") and payload.file_path:
+            node.data["tool_inputs"]["csv_path"] = payload.file_path
+
+        # PDF Query Tool
+        elif name == "PdfSearchTool" and payload.file_path:
+            node.data["tool_inputs"]["pdf_path"] = payload.file_path
+
+        # RAG Tool
+        elif name in ("RagTool", "File Query Tool"):
+            # prefer explicit file_name, else fallback to basename of file_path
+            if getattr(payload, "file_name", None):
+                node.data["tool_inputs"]["file_name"] = payload.file_name
+            elif payload.file_path:
+                node.data["tool_inputs"]["file_name"] = os.path.basename(payload.file_path)
+
+    # hand off to your builder
+    builder = CrewBuilder(workflow.nodes)
+    result = builder.build_and_run()
     return schema.WorkflowExecutionResult(
-        workflow_id=workflow_id,
-        status="success",
-        output=str(output)
+        workflow_id=workflow_id, status="success", output=str(result)
     )

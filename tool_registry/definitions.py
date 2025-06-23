@@ -6,6 +6,7 @@ from tool_registry.tools.TranscribeAudioTool import TranscribeAudioTool
 from tool_registry.tools.Pdfsearchtool import PDFQueryTool
 from tool_registry.tools.WordSearchTool import DocQueryTool
 from tool_registry.tools.CsvSearchTool import CsvQueryTool
+from tool_registry.tools.RagTool import RAGQueryTool
 
 PREDEFINED_TOOLS_CONFIG = {
     "serper_dev_tool": {
@@ -190,6 +191,31 @@ PREDEFINED_TOOLS_CONFIG = {
                 "label": "Upload-Button",
                 "required": True,
                 "description": "Button to upload the audion file"
+            }
+        }
+    },
+    "RagTool": {
+        "name": "RagTool",
+        "description": "Tool for extracting relevant text from all type of files",
+        "class": RAGQueryTool,
+        "parameters_schema": {
+            "filename": {
+                "type": "text",
+                "label": "filename",
+                "required": True,
+                "description": "File name to get the similar text"
+            },
+            "query": {
+                "type": "text",
+                "label": "question",
+                "required": True,
+                "description": "query to perform search in csv file"
+            },
+            "upload_button": {
+                "type": "fileupload",
+                "label": "Upload-Button",
+                "required": True,
+                "description": "Button to upload the file"
             }
         }
     }
