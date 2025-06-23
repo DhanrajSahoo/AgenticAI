@@ -26,7 +26,9 @@ logger.addHandler(handler)
 class Embeddings():
     def __init__(self,max_chunk_len: int = 500):
         self.max_chunk_len = max_chunk_len
-        self.model = ''
+        self.model = SentenceTransformer("all-MiniLM-L6-v2",
+                                         tokenizer_kwargs={"clean_up_tokenization_spaces": True}
+                                         )
 
     def _extract_pdf_text(self, file_path) -> str:
         """
