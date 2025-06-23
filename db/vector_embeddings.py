@@ -1,3 +1,4 @@
+import logging
 import os
 import shutil
 import time
@@ -13,6 +14,14 @@ from sqlalchemy.orm import Session
 from core.config import Config
 from .database import engine
 from . import models as db_models
+
+from services.aws_services import CloudWatchLogHandler
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = CloudWatchLogHandler('agentic-ai', 'agentic-ai')
+logger.addHandler(handler)
+
 
 class Embeddings():
     def __init__(self,max_chunk_len: int = 500):
@@ -184,30 +193,36 @@ class Embeddings():
     #     return list_embeddings
 
     def get_similar_chunks_via_orm(self,model, engine, filename: str, prompt: str, top_k: int = 3):
-        # 1) embed the prompt
-        emb = model.encode([prompt])[0].astype("float32").tolist()
+        try:
+            # 1) embed the prompt
+            emb = model.encode([prompt])[0].astype("float32").tolist()
 
-        with Session(engine) as session:
-            # 2) filter by filename and order by L2 distance
-            results = (
-                session
-                .query(db_models.Document)
-                .filter(db_models.Document.filename == filename)
-                .order_by(db_models.Document.embedding.l2_distance(emb))
-                .limit(top_k)
-                .all()
-            )
+            with Session(engine) as session:
+                # 2) filter by filename and order by L2 distance
+                results = (
+                    session
+                    .query(db_models.Document)
+                    .filter(db_models.Document.filename == filename)
+                    .order_by(db_models.Document.embedding.l2_distance(emb))
+                    .limit(top_k)
+                    .all()
+                )
 
-        return [doc.text for doc in results]
+            return [doc.text for doc in results]
+        except Exception as e:
+            logger.info(f"error at get_similar_chunks_via_orm{e}")
 
     def get_similar_text(self,file_name,prompt):
-        similar_chunks = self.get_similar_chunks_via_orm(model=self.model, engine=engine,
-                                                   filename=file_name,
-                                                   prompt=prompt,
-                                                   top_k=5
-                                                   )
-        most_similar_text = ""
-        for i in similar_chunks:
-            most_similar_text += i
+        try:
+            similar_chunks = self.get_similar_chunks_via_orm(model=self.model, engine=engine,
+                                                       filename=file_name,
+                                                       prompt=prompt,
+                                                       top_k=5
+                                                       )
+            most_similar_text = ""
+            for i in similar_chunks:
+                most_similar_text += i
 
-        return most_similar_text
+            return most_similar_text
+        except Exception as e:
+            logger.info(f"error at get_similar_text:{e}")

@@ -40,14 +40,18 @@ class RAGQueryTool(BaseTool):
     args_schema: Type[RAGQuerySchema] = RAGQuerySchema
 
     def _run(self, file_name: str, query: str) -> str:
-        # file_name=file_name[5:]
-        logger.info(f"Inside RAG tool filename:{file_name}, query:{query}")
-        similar_text = embed.get_similar_text(file_name=file_name,prompt=query)
-        # print(f"similar_text{similar_text}")
         try:
-            return f"Query:-{query}\n\nContext:-{similar_text}"
+            # file_name=file_name[5:]
+            logger.info(f"Inside RAG tool filename:{file_name}, query:{query}")
+            similar_text = embed.get_similar_text(file_name=file_name,prompt=query)
+            # print(f"similar_text{similar_text}")
+            try:
+                return f"Query:-{query}\n\nContext:-{similar_text}"
+            except Exception as e:
+                logger.info(f"Query failed: {e}")
+                return f"Query failed: {e}"
         except Exception as e:
-            return f"Query failed: {e}"
+            logger.info(f"error ragquery tool run{e}")
 
     def run(self, input_data: RAGQuerySchema) -> str:
         return self._run(input_data.file_name, input_data.query)

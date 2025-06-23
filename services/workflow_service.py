@@ -101,46 +101,49 @@ def delete_workflow(db: Session, workflow_id: uuid.UUID) -> bool:
 
 
 def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema.WorkflowExecutionResult:
-    workflow = get_workflow(db, workflow_id)
-    if not workflow:
-        raise ValueError(f"Workflow {workflow_id} not found")
+    try:
+        workflow = get_workflow(db, workflow_id)
+        if not workflow:
+            raise ValueError(f"Workflow {workflow_id} not found")
 
-    # 1) Auto-populate `source` from `parents`
-    for node in workflow.nodes:
-        if (node.id.startswith("agent-") or node.id.startswith("task-")) and not node.source:
-            node.source = list(node.parents)
+        # 1) Auto-populate `source` from `parents`
+        for node in workflow.nodes:
+            if (node.id.startswith("agent-") or node.id.startswith("task-")) and not node.source:
+                node.source = list(node.parents)
 
-    # 2) Inject tool_inputs for CSV / PDF / RAG
-    for node in workflow.nodes:
-        name = node.data.get("tool_name")
-        if not name:
-            continue
+        # 2) Inject tool_inputs for CSV / PDF / RAG
+        for node in workflow.nodes:
+            name = node.data.get("tool_name")
+            if not name:
+                continue
 
-        node.data.setdefault("tool_inputs", {})
+            node.data.setdefault("tool_inputs", {})
 
-        # always inject the user prompt if present
-        if payload.prompt:
-            node.data["tool_inputs"]["query"] = payload.prompt
+            # always inject the user prompt if present
+            if payload.prompt:
+                node.data["tool_inputs"]["query"] = payload.prompt
 
-        # CSV
-        if name in ("CsvSearchTool", "CSV Query Tool") and payload.file_path:
-            node.data["tool_inputs"]["csv_path"] = payload.file_path
+            # CSV
+            if name in ("CsvSearchTool", "CSV Query Tool") and payload.file_path:
+                node.data["tool_inputs"]["csv_path"] = payload.file_path
 
-        # PDF Query Tool
-        elif name == "PdfSearchTool" and payload.file_path:
-            node.data["tool_inputs"]["pdf_path"] = payload.file_path
+            # PDF Query Tool
+            elif name == "PdfSearchTool" and payload.file_path:
+                node.data["tool_inputs"]["pdf_path"] = payload.file_path
 
-        # RAG Tool
-        elif name in ("RagTool", "File Query Tool"):
-            # prefer explicit file_name, else fallback to basename of file_path
-            if getattr(payload, "file_name", None):
-                node.data["tool_inputs"]["file_name"] = payload.file_name
-            elif payload.file_path:
-                node.data["tool_inputs"]["file_name"] = os.path.basename(payload.file_path)
+            # RAG Tool
+            elif name in ("RagTool", "File Query Tool"):
+                # prefer explicit file_name, else fallback to basename of file_path
+                if getattr(payload, "file_name", None):
+                    node.data["tool_inputs"]["file_name"] = payload.file_name
+                elif payload.file_path:
+                    node.data["tool_inputs"]["file_name"] = os.path.basename(payload.file_path)
 
-    # hand off to your builder
-    builder = CrewBuilder(workflow.nodes)
-    result = builder.build_and_run()
-    return schema.WorkflowExecutionResult(
-        workflow_id=workflow_id, status="success", output=str(result)
-    )
+        # hand off to your builder
+        builder = CrewBuilder(workflow.nodes)
+        result = builder.build_and_run()
+        return schema.WorkflowExecutionResult(
+            workflow_id=workflow_id, status="success", output=str(result)
+        )
+    except Exception as e:
+        logger.info(f"error at running workflow:{e}")
