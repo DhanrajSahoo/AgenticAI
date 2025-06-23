@@ -75,39 +75,37 @@ class CrewBuilder:
                 agent_tools = []
                 for source_node_id in ui_node.source:
                     if self._get_node_type(source_node_id) == "tool":
-                        tool_ui_node = self.nodes_map.get(source_node_id)
-                        if not tool_ui_node:
-                            raise CrewBuilderError(
-                                f"Tool node '{source_node_id}' referenced by agent '{ui_node.id}' not found.")
+                        tool_ui_node = self.nodes_map[source_node_id]
+
                         try:
                             tool_data = ui_schema.UIToolNodeData.model_validate(tool_ui_node.data)
                         except ValidationError as e:
                             raise CrewBuilderError(f"Invalid data for tool node '{tool_ui_node.id}': {e.errors()}")
 
-                        try:
-                            # tool_instance = get_tool_instance(tool_data.tool_name, tool_data.config_params)
-                            # agent_tools.append(tool_instance)
-                            tool_inputs = tool_data.tool_inputs if hasattr(tool_data, "tool_inputs") else {}
-                            tool_instance = get_tool_instance(tool_data.tool_name, tool_data.config_params)
-                            if tool_inputs:
-                                try:
-                                    tool_instance = StaticInputToolWrapper(tool_instance, tool_inputs)
-                                except Exception as e:
-                                    raise CrewBuilderError(
-                                        f"Failed to wrap tool '{tool_data.tool_name}' with static inputs: {e}"
-                                    )
+                        # instantiate the tool class itself
+                        base = get_tool_instance(tool_data.tool_name, tool_data.config_params)
 
-                            agent_tools.append(tool_instance)
-                        except Exception as e:
-                            raise CrewBuilderError(
-                                f"Failed to instantiate tool '{tool_data.tool_name}' for agent '{agent_data.agent_name}': {e}")
+                        # now pull _only_ the dict under "tool_inputs"
+                        raw = tool_ui_node.data.get("tool_inputs")
+                        tool_inputs = raw.copy() if isinstance(raw, dict) else {}
+
+                        # if there really are inputs, wrap them
+                        if tool_inputs:
+                            try:
+                                base = StaticInputToolWrapper(base, tool_inputs)
+                            except Exception as e:
+                                raise CrewBuilderError(
+                                    f"Failed to wrap tool '{tool_data.tool_name}' with static inputs: {e}"
+                                )
+
+                        agent_tools.append(base)
                 logger.info(f"agent_tools:{agent_tools}")
 
                 agent_llm = self.default_llm
                 if agent_data.agent_model and agent_data.agent_model.strip():
                     model_name = agent_data.agent_model.strip()
 
-                    # Check if the model is a Bedrock model
+                    # Check if the model is a Bedrock modelx
                     if any(model_name.startswith(prefix) for prefix in bedrock_model_prefixes):
                         # Use CrewAI's LLM wrapper for Bedrock
                         agent_llm = CrewLLM(

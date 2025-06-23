@@ -1,16 +1,18 @@
 import os
 import shutil
 import time
+import faiss
 from typing import List
 from docx import Document
 from pypdf import PdfReader
 from chromadb.config import Settings
 from chromadb import PersistentClient
 from sentence_transformers import SentenceTransformer
-
-
+from sklearn.metrics.pairwise import cosine_similarity
+from sqlalchemy.orm import Session
 from core.config import Config
-
+from .database import engine
+from . import models as db_models
 
 class Embeddings():
     def __init__(self,max_chunk_len: int = 500):
@@ -148,7 +150,6 @@ class Embeddings():
             return context
 
         elif search_tool == "cosine":
-            from sklearn.metrics.pairwise import cosine_similarity
             text_embeddings = model.encode(chunks)
             prompt_embedding = model.encode([prompt])
             similarities = cosine_similarity(prompt_embedding, text_embeddings)[0]
@@ -157,7 +158,6 @@ class Embeddings():
             return context
 
         elif search_tool == "faiss":
-            import faiss
             text_embeddings = model.encode(chunks).astype("float32")
             index = faiss.IndexFlatL2(text_embeddings.shape[1])
             index.add(text_embeddings)
@@ -182,3 +182,32 @@ class Embeddings():
     #         embedding = embeddings[0].tolist()
     #         list_embeddings.append(embedding)
     #     return list_embeddings
+
+    def get_similar_chunks_via_orm(self,model, engine, filename: str, prompt: str, top_k: int = 3):
+        # 1) embed the prompt
+        emb = model.encode([prompt])[0].astype("float32").tolist()
+
+        with Session(engine) as session:
+            # 2) filter by filename and order by L2 distance
+            results = (
+                session
+                .query(db_models.Document)
+                .filter(db_models.Document.filename == filename)
+                .order_by(db_models.Document.embedding.l2_distance(emb))
+                .limit(top_k)
+                .all()
+            )
+
+        return [doc.text for doc in results]
+
+    def get_similar_text(self,file_name,prompt):
+        similar_chunks = self.get_similar_chunks_via_orm(model=self.model, engine=engine,
+                                                   filename=file_name,
+                                                   prompt=prompt,
+                                                   top_k=5
+                                                   )
+        most_similar_text = ""
+        for i in similar_chunks:
+            most_similar_text += i
+
+        return most_similar_text

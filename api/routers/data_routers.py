@@ -17,14 +17,21 @@ from db.vector_embeddings import Embeddings
 from schemas import workflows_schema as schema
 from schemas.tools_schema import FileCreate, FileQuery, FileDelete
 from services.aws_services import upload_pdf_to_s3_direct
-from db.crud import create_file_record, get_file_url_by_name
+from db.crud import create_file_record, get_file_url_by_name, create_documents
 from services.aws_services import CloudWatchLogHandler, delete_file_from_db_and_s3
+from sentence_transformers import SentenceTransformer
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 handler = CloudWatchLogHandler('agentic-ai', 'agentic-ai')
 logger.addHandler(handler)
 embed  = Embeddings()
+
+embedder = SentenceTransformer(
+    "all-MiniLM-L6-v2",
+    tokenizer_kwargs={"clean_up_tokenization_spaces": True}
+)
 
 async def save_upload_to_tempfile(
     upload: UploadFile,
@@ -64,30 +71,44 @@ router = APIRouter(
 async def upload_file(files: List[UploadFile] = File(...),db: Session = Depends(get_db_session)):
     try:
         # validate_upload_files(files)
-        text = ""
+        all_chunks: List[str] = []
+        file_name = ""
+        url = ""
+        file_path = ""
         for f in files:
             if f.filename[-4:].lower() == '.pdf':
-                logger.info(f"inside pdf {f.filename}")
+                file_name += f.filename
+                path = await save_upload_to_tempfile(f)
+                file_path += path
                 public_url = upload_pdf_to_s3_direct(
                     file=f,
                     bucket_name="apexon-agentic-ai",
                     s3_key=f.filename
                 )
-                logger.info(f"public url:{public_url}")
+                url += public_url
+                raw_text = embed._extract_pdf_text(path)
+                chunk_texts = embed._chunk_text(raw_text)
+                all_chunks.extend(chunk_texts)
                 file = FileCreate(
                     file_name=f.filename,
                     file_url=public_url
                 )
                 create_file_record(db, file)
-                logger.info(f"create file done")
-                #logger.info({"Message": "PDF File uploaded successfully!"})
-                return {"Message": "PDF File uploaded successfully!"}
             elif f.filename[-4:] == '.wav':
+                file_name += f.filename
+                path = await save_upload_to_tempfile(f)
+                file_path += path
                 public_url = upload_pdf_to_s3_direct(
                     file=f,
                     bucket_name="apexon-agentic-ai",
                     s3_key=f.filename
                 )
+
+                url += public_url
+                raw_text = embed._extract_pdf_text(path)
+                chunk_texts = embed._chunk_text(raw_text)
+                all_chunks.extend(chunk_texts)
+
                 file = FileCreate(
                     file_name=f.filename,
                     file_url=public_url
@@ -95,35 +116,53 @@ async def upload_file(files: List[UploadFile] = File(...),db: Session = Depends(
                 create_file_record(db, file)
                 return {"Message": "Audio File uploaded successfully!"}
             elif f.filename[-4:] == '.csv':
+                file_name += f.filename
+                path = await save_upload_to_tempfile(f)
+                file_path += path
                 public_url = upload_pdf_to_s3_direct(
                     file=f,
                     bucket_name="apexon-agentic-ai",
                     s3_key=f.filename
                 )
-                file = FileCreate(
-                    file_name=f.filename,
-                    file_url=public_url
-                )
-                create_file_record(db, file)
-                return {"Message": "CSV File uploaded successfully!"}
-                # text+=path
-                # file_reader = FileReadTool(file_path=path)
+
+                url += public_url
+                text = None
             elif f.filename[-5:] == '.docx':
+                file_name += f.filename
+                path = await save_upload_to_tempfile(f)
+                file_path += path
                 public_url = upload_pdf_to_s3_direct(
                     file=f,
                     bucket_name="apexon-agentic-ai",
                     s3_key=f.filename
                 )
+
+                url += public_url
+                raw_text = embed._extract_docx_text(path)
+                chunk_texts = embed._chunk_text(raw_text)
+                all_chunks.extend(chunk_texts)
+
                 file = FileCreate(
                     file_name=f.filename,
                     file_url=public_url
                 )
                 create_file_record(db, file)
                 return {"Message": "Word File uploaded successfully!"}
-        #logger.info({"Message": text})
-        return {"Message": text}
+            else:
+                text = None
+
+        created = create_documents(
+            db,
+            filename=file_name,
+            file_path=file_path,
+            embedder=embedder,
+            url=url,
+            texts=all_chunks
+        )
+
+        return {"Message": "File Uploaded and vector created Successfully"}
     except Exception as e:
-        logger.info(f"while uploading file: {e}", exc_info=True)
+        #print(f"while uploading file: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to upload a file: {str(e)}")
 
 
