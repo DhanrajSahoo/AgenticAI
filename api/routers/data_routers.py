@@ -97,25 +97,64 @@ async def upload_file(files: List[UploadFile] = File(...),db: Session = Depends(
                 )
                 create_file_record(db, file)
             elif f.filename[-4:] == '.wav':
+                f.file.seek(0)
                 file_name += f.filename
                 path = await save_upload_to_tempfile(f)
                 file_path += path
+
                 public_url = upload_pdf_to_s3_direct(
                     file=f,
                     bucket_name="apexon-agentic-ai",
                     s3_key=f.filename
                 )
-
                 url += public_url
-                raw_text = embed._extract_pdf_text(path)
-                chunk_texts = embed._chunk_text(raw_text)
-                all_chunks.extend(chunk_texts)
 
                 file = FileCreate(
                     file_name=f.filename,
                     file_url=public_url
                 )
                 create_file_record(db, file)
+
+                return {"Message": "Audio File uploaded successfully!"}
+            elif f.filename[-4:] == '.mp3':
+                f.file.seek(0)
+                file_name += f.filename
+                path = await save_upload_to_tempfile(f)
+                file_path += path
+
+                public_url = upload_pdf_to_s3_direct(
+                    file=f,
+                    bucket_name="apexon-agentic-ai",
+                    s3_key=f.filename
+                )
+                url += public_url
+
+                file = FileCreate(
+                    file_name=f.filename,
+                    file_url=public_url
+                )
+                create_file_record(db, file)
+
+                return {"Message": "Audio File uploaded successfully!"}
+            elif f.filename[-4:] == '.m4a':
+                f.file.seek(0)
+                file_name += f.filename
+                path = await save_upload_to_tempfile(f)
+                file_path += path
+
+                public_url = upload_pdf_to_s3_direct(
+                    file=f,
+                    bucket_name="apexon-agentic-ai",
+                    s3_key=f.filename
+                )
+                url += public_url
+
+                file = FileCreate(
+                    file_name=f.filename,
+                    file_url=public_url
+                )
+                create_file_record(db, file)
+
                 return {"Message": "Audio File uploaded successfully!"}
             elif f.filename[-4:] == '.csv':
                 file_name += f.filename

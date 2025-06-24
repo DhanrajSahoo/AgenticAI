@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from crewai.tools import BaseTool
 from openai import OpenAI,OpenAIError
 from dotenv import load_dotenv
+from core.config import Config
 from typing import Type
 import os
 
@@ -15,8 +16,7 @@ class TranscribeAudioTool(BaseTool):
 
     def _run(self, audio_file_path: str) -> str:
         # Ensure the API key is set
-        load_dotenv()
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = os.environ["OPENAI_API_KEY"] = Config.openai_key
         if not api_key:
             return "Error: OPENAI_API_KEY environment variable is not set."
 
