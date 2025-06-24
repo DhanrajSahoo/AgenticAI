@@ -2,15 +2,17 @@ import os
 import logging
 import tempfile
 import requests
+import chromadb
 from io import BytesIO
 from typing import List
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, HTTPException, Depends,File, UploadFile, Form
 from crewai_tools import FileReadTool, CSVSearchTool, PDFSearchTool
+from sentence_transformers import SentenceTransformer
 #from validators import file_validation
-import chromadb
 
-from db.models import Files
+
+from db.models import Files, Document
 from core.config import Config
 from db.database import get_db_session
 from db.vector_embeddings import Embeddings
@@ -19,7 +21,7 @@ from schemas.tools_schema import FileCreate, FileQuery, FileDelete
 from services.aws_services import upload_pdf_to_s3_direct
 from db.crud import create_file_record, get_file_url_by_name, create_documents
 from services.aws_services import CloudWatchLogHandler, delete_file_from_db_and_s3
-from sentence_transformers import SentenceTransformer
+
 
 
 logger = logging.getLogger(__name__)
@@ -242,5 +244,23 @@ def clear_chroma():
     except Exception as e:
         logger.info(f"{e}e")
         raise HTTPException(status_code=500, detail=f"Failed to clear chroma: {str(e)}")
+
+@router.get("/filenames/", response_model=List[str])
+def list_filenames(db: Session = Depends(get_db_session)):
+    """
+    Returns a list of all distinct filenames stored in vector_db.
+    """
+    try:
+        # Query for distinct filename values
+        rows = (
+            db
+            .query(Document.filename)
+            .distinct()
+            .all()
+        )
+        # rows is a list of 1-tuples like [("file1.csv",), ("report.pdf",), ...]
+        return [filename for (filename,) in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unable to fetch filenames: {e}")
 
 
