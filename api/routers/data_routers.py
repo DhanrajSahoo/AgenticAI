@@ -59,7 +59,6 @@ router = APIRouter(
 #'sentence-transformers/all-MiniLM-L6-v2',
 #embed = EmbeddingsProcessor(db_config=Config)
 
-
 @router.post("/upload/", status_code=201)
 async def upload_file(files: List[UploadFile] = File(...),db: Session = Depends(get_db_session)):
     try:
@@ -83,6 +82,20 @@ async def upload_file(files: List[UploadFile] = File(...),db: Session = Depends(
                 #logger.info({"Message": "PDF File uploaded successfully!"})
                 return {"Message": "PDF File uploaded successfully!"}
             elif f.filename[-4:] == '.wav':
+                f.file.seek(0)
+                public_url = upload_pdf_to_s3_direct(
+                    file=f,
+                    bucket_name="apexon-agentic-ai",
+                    s3_key=f.filename
+                )
+                file = FileCreate(
+                    file_name=f.filename,
+                    file_url=public_url
+                )
+                create_file_record(db, file)
+                return {"Message": "Audio File uploaded successfully!"}
+            elif f.filename[-4:] == '.mp3':
+                f.file.seek(0)
                 public_url = upload_pdf_to_s3_direct(
                     file=f,
                     bucket_name="apexon-agentic-ai",

@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from crewai.tools import BaseTool
 from openai import OpenAI,OpenAIError
-from dotenv import load_dotenv
+from core.config import Config
 from typing import Type
 import os
 
@@ -14,37 +14,27 @@ class TranscribeAudioTool(BaseTool):
     args_schema: Type[TranscribeAudioToolSchema] = TranscribeAudioToolSchema
 
     def _run(self, audio_file_path: str) -> str:
-        # Ensure the API key is set
-        load_dotenv()
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            return "Error: OPENAI_API_KEY environment variable is not set."
+        api_key = os.environ["OPENAI_API_KEY"] = Config.openai_key
 
-        # Initialize OpenAI client
-        client = OpenAI(api_key=api_key)
-
-        # Validate the audio file path       
         if not os.path.exists(audio_file_path):
-            return f"Error: File not found - {audio_file_path}"
+            return f"File not found: {audio_file_path}"
 
-        # Optional: Validate file extension
-        valid_extensions = (".mp3", ".wav", ".m4a")
-        if not audio_file_path.lower().endswith(valid_extensions):
-            return f"Error: Unsupported file format. Supported formats are: {', '.join(valid_extensions)}"
-        
+        if not audio_file_path.lower().endswith((".mp3", ".wav", ".m4a")):
+            return "Unsupported audio format."
+
         try:
+            client = OpenAI(api_key=api_key)
             with open(audio_file_path, "rb") as audio_file:
-                print(f"[DEBUG] Reading file: {audio_file_path}")
-                transcript = client.audio.transcriptions.create(
+                result = client.audio.transcriptions.create(
                     model="whisper-1",
                     file=audio_file,
                     response_format="text"
                 )
-            return transcript
+            return result
         except OpenAIError as e:
-            return f"Transcription failed due to API error: {str(e)}"
+            return f"OpenAI API error: {str(e)}"
         except Exception as e:
             return f"Transcription failed: {str(e)}"
-        
+
     def run(self, input_data: TranscribeAudioToolSchema) -> str:
         return self._run(input_data.audio_file_path)

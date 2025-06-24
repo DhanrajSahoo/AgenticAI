@@ -62,6 +62,10 @@ class CrewBuilder:
             return "task"
         elif node_id.startswith("tool-"):
             return "tool"
+        elif node_id.startswith("chat-input"):
+            return "chat-input"
+        elif node_id.startswith("chat-output"):
+            return "chat-output"
         return None
 
     def _instantiate_agents_with_tools(self):
@@ -79,16 +83,39 @@ class CrewBuilder:
                         if not tool_ui_node:
                             raise CrewBuilderError(
                                 f"Tool node '{source_node_id}' referenced by agent '{ui_node.id}' not found.")
+
                         try:
                             tool_data = ui_schema.UIToolNodeData.model_validate(tool_ui_node.data)
                         except ValidationError as e:
                             raise CrewBuilderError(f"Invalid data for tool node '{tool_ui_node.id}': {e.errors()}")
 
                         try:
-                            # tool_instance = get_tool_instance(tool_data.tool_name, tool_data.config_params)
-                            # agent_tools.append(tool_instance)
+                            # --- Inject chat-input ONLY if query is empty ---
+                            for chat_input_node_id in tool_ui_node.parents:
+                                if self._get_node_type(chat_input_node_id) == "chat-input":
+                                    chat_node = self.nodes_map.get(chat_input_node_id)
+                                    if chat_node:
+                                        try:
+                                            chat_value = chat_node.data.get("input", "")
+                                            if not tool_data.tool_inputs:
+                                                tool_data.tool_inputs = {}
+
+                                            # Only inject if "query" is not already set
+                                            existing_query = tool_data.tool_inputs.get("query", "")
+                                            if not existing_query:
+                                                tool_data.tool_inputs["query"] = chat_value
+                                                logger.info(f"Injected chat-input '{chat_value}' into tool '{tool_data.tool_name}'")
+                                            else:
+                                                logger.info(f"Skipped injecting chat-input into tool '{tool_data.tool_name}' because query already exists")
+                                        except Exception as e:
+                                            raise CrewBuilderError(
+                                                f"Failed to parse chat-input node '{chat_input_node_id}': {e}"
+                                            )
+                            # -------------------------------------------------
+
                             tool_inputs = tool_data.tool_inputs if hasattr(tool_data, "tool_inputs") else {}
                             tool_instance = get_tool_instance(tool_data.tool_name, tool_data.config_params)
+
                             if tool_inputs:
                                 try:
                                     tool_instance = StaticInputToolWrapper(tool_instance, tool_inputs)
@@ -98,36 +125,29 @@ class CrewBuilder:
                                     )
 
                             agent_tools.append(tool_instance)
+
                         except Exception as e:
                             raise CrewBuilderError(
-                                f"Failed to instantiate tool '{tool_data.tool_name}' for agent '{agent_data.agent_name}': {e}")
-                logger.info(f"agent_tools:{agent_tools}")
+                                f"Failed to instantiate tool '{tool_data.tool_name}' for agent '{agent_data.agent_name}': {e}"
+                            )
+
+                logger.info(f"agent_tools: {agent_tools}")
 
                 agent_llm = self.default_llm
                 if agent_data.agent_model and agent_data.agent_model.strip():
                     model_name = agent_data.agent_model.strip()
-
-                    # Check if the model is a Bedrock model
                     if any(model_name.startswith(prefix) for prefix in bedrock_model_prefixes):
-                        # Use CrewAI's LLM wrapper for Bedrock
                         agent_llm = CrewLLM(
                             model=model_name,
                             temperature=agent_data.agent_temprature or 0.7,
-                            # config={
-                            #     "aws_access_key_id": settings.access_key,
-                            #     "aws_secret_access_key": settings.secret_key,
-                            #     "region_name": 'us-east-1'
-                            # }
                         )
                     else:
-                        # Assume it's an OpenAI model
                         agent_llm = ChatOpenAI(
                             openai_api_key=Config.openai_key,
                             model_name=model_name,
                             temperature=agent_data.agent_temprature or 0.7
                         )
 
-                # Handle agent_iteration
                 agent_max_iter_val = 5
                 if agent_data.agent_iteration is not None:
                     if isinstance(agent_data.agent_iteration, str):
@@ -135,18 +155,10 @@ class CrewBuilder:
                             parsed_iter = int(agent_data.agent_iteration)
                             if parsed_iter >= 1:
                                 agent_max_iter_val = parsed_iter
-                            else:
-                                print(
-                                    f"Warning: agent_iteration '{agent_data.agent_iteration}' is not >= 1. Using default {agent_max_iter_val}.")
                         except ValueError:
-                            print(
-                                f"Warning: Could not convert agent_iteration string '{agent_data.agent_iteration}' to int. Using default {agent_max_iter_val}.")
-                    elif isinstance(agent_data.agent_iteration, int):
-                        if agent_data.agent_iteration >= 1:
-                            agent_max_iter_val = agent_data.agent_iteration
-                        else:
-                            print(
-                                f"Warning: agent_iteration {agent_data.agent_iteration} is not >= 1. Using default {agent_max_iter_val}.")
+                            pass
+                    elif isinstance(agent_data.agent_iteration, int) and agent_data.agent_iteration >= 1:
+                        agent_max_iter_val = agent_data.agent_iteration
 
                 agent = Agent(
                     role=agent_data.agent_role,
@@ -159,9 +171,11 @@ class CrewBuilder:
                     max_iter=agent_max_iter_val,
                     cache=agent_data.agent_cache
                 )
-                logger.info(f"agent{agent}")
+
+                logger.info(f"agent: {agent}")
                 self.crew_agents.append(agent)
                 self.agent_node_to_instance_map[ui_node.id] = agent
+
 
     def _instantiate_tasks_and_map_agents(self) -> Dict[str, Dict[str, Any]]:
         """

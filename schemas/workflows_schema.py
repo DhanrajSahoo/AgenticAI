@@ -30,6 +30,12 @@ class UIToolNodeData(UIRawNodeData):
     config_params: Optional[Dict[str, Any]] = None # Parameters for this tool instance
     tool_inputs: Optional[Dict[str, Any]] = {}
 
+class UIChatInputData(UIRawNodeData):
+    input: str = Field(default="")
+
+class UIChatOutputData(UIRawNodeData):
+    input: str = Field(default="")   
+
 # UI Node Structure
 class UINode(BaseModel):
     id: str
