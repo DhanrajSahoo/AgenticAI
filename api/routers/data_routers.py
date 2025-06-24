@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from fastapi import APIRouter, HTTPException, Depends,File, UploadFile, Form
 from crewai_tools import FileReadTool, CSVSearchTool, PDFSearchTool
 from sentence_transformers import SentenceTransformer
+from tool_registry.tools.AudioRecorder import VoiceRecorderTool
 #from validators import file_validation
 
 
@@ -189,6 +190,62 @@ async def upload_file(files: List[UploadFile] = File(...),db: Session = Depends(
                 )
                 create_file_record(db, file)
                 return {"Message": "Word File uploaded successfully!"}
+            elif f.filename[-5:].lower() == '.json':
+                file_name += f.filename
+                path = await save_upload_to_tempfile(f)
+                file_path += path
+                public_url = upload_pdf_to_s3_direct(
+                    file=f, bucket_name="apexon-agentic-ai", s3_key=f.filename
+                )
+                url += public_url
+                raw_text = embed._extract_json_text(path)
+                chunk_texts = embed._chunk_text(raw_text)
+                all_chunks.extend(chunk_texts)
+                file = FileCreate(file_name=f.filename, file_url=public_url)
+                create_file_record(db, file)
+
+            elif f.filename[-3:].lower() == '.py':
+                file_name += f.filename
+                path = await save_upload_to_tempfile(f)
+                file_path += path
+                public_url = upload_pdf_to_s3_direct(
+                    file=f, bucket_name="apexon-agentic-ai", s3_key=f.filename
+                )
+                url += public_url
+                raw_text = embed._extract_python_text(path)
+                chunk_texts = embed._chunk_text(raw_text)
+                all_chunks.extend(chunk_texts)
+                file = FileCreate(file_name=f.filename, file_url=public_url)
+                create_file_record(db, file)
+
+            elif f.filename[-5:].lower() == '.html':
+                file_name += f.filename
+                path = await save_upload_to_tempfile(f)
+                file_path += path
+                public_url = upload_pdf_to_s3_direct(
+                    file=f, bucket_name="apexon-agentic-ai", s3_key=f.filename
+                )
+                url += public_url
+                raw_text = embed._extract_html_text(path)
+                chunk_texts = embed._chunk_text(raw_text)
+                all_chunks.extend(chunk_texts)
+                file = FileCreate(file_name=f.filename, file_url=public_url)
+                create_file_record(db, file)
+
+            elif f.filename[-5:].lower() == '.yaml' or f.filename[-4:].lower() == '.yml':
+                file_name += f.filename
+                path = await save_upload_to_tempfile(f)
+                file_path += path
+                public_url = upload_pdf_to_s3_direct(
+                    file=f, bucket_name="apexon-agentic-ai", s3_key=f.filename
+                )
+                url += public_url
+                raw_text = embed._extract_yaml_text(path)
+                chunk_texts = embed._chunk_text(raw_text)
+                all_chunks.extend(chunk_texts)
+                file = FileCreate(file_name=f.filename, file_url=public_url)
+                create_file_record(db, file)
+
             else:
                 text = None
 
@@ -205,7 +262,6 @@ async def upload_file(files: List[UploadFile] = File(...),db: Session = Depends(
     except Exception as e:
         #print(f"while uploading file: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to upload a file: {str(e)}")
-
 
 @router.post("/get_files/", status_code=201)
 def fetch_file_url(payload: FileQuery, db: Session = Depends(get_db_session)):
