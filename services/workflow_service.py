@@ -114,6 +114,7 @@ def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema
         # 2) Inject tool_inputs for CSV / PDF / RAG
         for node in workflow.nodes:
             name = node.data.get("tool_name")
+            logger.info(f"The  tool name is: : {name}")
             if not name:
                 continue
 
@@ -132,8 +133,9 @@ def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema
                 node.data["tool_inputs"]["pdf_path"] = payload.file_path
 
             # TranscribeAudioTool
-            elif name == "TranscribeAudioTool" and payload.file_path:
+            elif name in ("Transcribe Audio", "TranscribeAudioTool") and payload.file_path:
                 node.data["tool_inputs"]["pdf_path"] = payload.file_path
+
 
             # RAG Tool
             elif name in ("RagTool", "File Query Tool"):
