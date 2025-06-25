@@ -307,6 +307,9 @@ class CrewBuilder:
         )
 
         result = crew.kickoff()
+        if isinstance(result, str) and result.lower().startswith("i'm sorry"):
+            print("Detected failure in first attempt. Retrying crew execution...")
+            result = crew.kickoff()
         return result
 
     def build_and_run(self) -> Any:
