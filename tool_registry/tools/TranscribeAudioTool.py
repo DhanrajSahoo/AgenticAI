@@ -7,7 +7,7 @@ from typing import Type
 import os
 
 class TranscribeAudioToolSchema(BaseModel):
-    audio_file_path: str = Field(..., description="Full path to the audio file (e.g., audio/meeting1.mp3)")
+    pdf_path: str = Field(..., description="Full path to the audio file (e.g., audio/meeting1.mp3)")
 
 class TranscribeAudioTool(BaseTool):
     name: str = "Audio Transcriber Tool"
