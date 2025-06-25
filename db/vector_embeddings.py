@@ -3,6 +3,9 @@ import os
 import shutil
 import time
 import faiss
+import json
+import yaml
+from bs4 import BeautifulSoup
 from typing import List
 from docx import Document
 from pypdf import PdfReader
@@ -36,6 +39,37 @@ class Embeddings():
         """
         reader = PdfReader(file_path)
         return "\n".join(page.extract_text() or "" for page in reader.pages)
+    
+    def _extract_json_text(self, file_path: str) -> str:
+        """
+        Extracts readable text from a JSON file.
+        """
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return json.dumps(data, indent=2)
+    
+    def _extract_yaml_text(self, file_path: str) -> str:
+        """
+        Extracts readable text from a YAML file.
+        """
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+        return yaml.dump(data, indent=2)
+
+    def _extract_python_text(self, file_path: str) -> str:
+        """
+        Extracts plain text from a Python (.py) file.
+        """
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read()
+
+    def _extract_html_text(self, file_path: str) -> str:
+        """
+        Extracts visible text from an HTML file using BeautifulSoup.
+        """
+        with open(file_path, "r", encoding="utf-8") as f:
+            soup = BeautifulSoup(f, "html.parser")
+        return soup.get_text(separator="\n")
 
     def _extract_docx_text(self, file_path: str) -> str:
         """
@@ -221,6 +255,7 @@ class Embeddings():
                                                        prompt=prompt,
                                                        top_k=5
                                                        )
+            
             most_similar_text = ""
             for i in similar_chunks:
                 most_similar_text += i
