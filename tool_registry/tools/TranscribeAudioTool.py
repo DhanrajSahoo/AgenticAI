@@ -14,7 +14,7 @@ class TranscribeAudioTool(BaseTool):
     description: str = "Transcribes an audio file using OpenAI Whisper API. Input must be the path to an audio file."
     args_schema: Type[TranscribeAudioToolSchema] = TranscribeAudioToolSchema
 
-    def _run(self, audio_file_path: str) -> str:
+    def _run(self, pdf_path: str) -> str:
         # Ensure the API key is set
         api_key = os.environ["OPENAI_API_KEY"] = Config.openai_key
         if not api_key:
@@ -24,17 +24,17 @@ class TranscribeAudioTool(BaseTool):
         client = OpenAI(api_key=api_key)
 
         # Validate the audio file path       
-        if not os.path.exists(audio_file_path):
-            return f"Error: File not found - {audio_file_path}"
+        if not os.path.exists(pdf_path):
+            return f"Error: File not found - {pdf_path}"
 
         # Optional: Validate file extension
         valid_extensions = (".mp3", ".wav", ".m4a")
-        if not audio_file_path.lower().endswith(valid_extensions):
+        if not pdf_path.lower().endswith(valid_extensions):
             return f"Error: Unsupported file format. Supported formats are: {', '.join(valid_extensions)}"
         
         try:
-            with open(audio_file_path, "rb") as audio_file:
-                print(f"[DEBUG] Reading file: {audio_file_path}")
+            with open(pdf_path, "rb") as audio_file:
+                print(f"[DEBUG] Reading file: {pdf_path}")
                 transcript = client.audio.transcriptions.create(
                     model="whisper-1",
                     file=audio_file,
@@ -47,4 +47,4 @@ class TranscribeAudioTool(BaseTool):
             return f"Transcription failed: {str(e)}"
         
     def run(self, input_data: TranscribeAudioToolSchema) -> str:
-        return self._run(input_data.audio_file_path)
+        return self._run(input_data.pdf_path)
