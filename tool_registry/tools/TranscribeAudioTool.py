@@ -5,6 +5,12 @@ from dotenv import load_dotenv
 from core.config import Config
 from typing import Type
 import os
+import logging
+from services.aws_services import CloudWatchLogHandler
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = CloudWatchLogHandler('agentic-ai', 'agentic-ai')
+logger.addHandler(handler)
 
 class TranscribeAudioToolSchema(BaseModel):
     pdf_path: str = Field(..., description="Full path to the audio file (e.g., audio/meeting1.mp3)")
@@ -15,6 +21,7 @@ class TranscribeAudioTool(BaseTool):
     args_schema: Type[TranscribeAudioToolSchema] = TranscribeAudioToolSchema
 
     def _run(self, pdf_path: str) -> str:
+        logger.info(f"[DEBUG] Received pdf_path: {pdf_path}")
         # Ensure the API key is set
         api_key = os.environ["OPENAI_API_KEY"] = Config.openai_key
         if not api_key:
@@ -48,3 +55,4 @@ class TranscribeAudioTool(BaseTool):
         
     def run(self, input_data: TranscribeAudioToolSchema) -> str:
         return self._run(input_data.pdf_path)
+
