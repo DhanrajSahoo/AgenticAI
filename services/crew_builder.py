@@ -89,7 +89,7 @@ class CrewBuilder:
                             # now pull _only_ the dict under "tool_inputs"
                             raw = tool_ui_node.data.get("tool_inputs")
                             tool_inputs = raw.copy() if isinstance(raw, dict) else {}
-
+                            logger.info(f"tool_inputs from UI: {tool_inputs}")
                             # if there really are inputs, wrap them
                             if tool_inputs:
                                 try:
@@ -305,11 +305,13 @@ class CrewBuilder:
             process=Process.sequential,
             verbose=True
         )
-
+        logger.info(f"Crew before kickoff is :{crew}")
         result = crew.kickoff()
         if isinstance(result, str) and result.lower().startswith("i'm sorry"):
-            print("Detected failure in first attempt. Retrying crew execution...")
+            logger.info("Detected failure in first attempt. Retrying crew execution...")
             result = crew.kickoff()
+
+        logger.info(f"The result to be shown is: {result}")
         return result
 
     def build_and_run(self) -> Any:
