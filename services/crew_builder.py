@@ -84,7 +84,10 @@ class CrewBuilder:
                                 raise CrewBuilderError(f"Invalid data for tool node '{tool_ui_node.id}': {e.errors()}")
 
                             # instantiate the tool class itself
-                            base = get_tool_instance(tool_data.tool_name, tool_data.config_params)
+                            tool_name = tool_data.tool_name
+                            if tool_name == "Transcribe Audio":
+                                tool_name = "TranscribeAudioTool"
+                            base = get_tool_instance(tool_name, tool_data.config_params)
 
                             # now pull _only_ the dict under "tool_inputs"
                             raw = tool_ui_node.data.get("tool_inputs")
