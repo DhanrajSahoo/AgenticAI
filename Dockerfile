@@ -1,28 +1,28 @@
-FROM public.ecr.aws/docker/library/python:3.11-slim
-
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-
+# Use multi-stage build to reduce final image size (optional but recommended)
+FROM public.ecr.aws/docker/library/python:3.11-slim AS builder
+ 
 WORKDIR /app
-
-# Install build tools + PortAudio headers and libs
+ 
+# Install build dependencies only for this stage
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      build-essential \
-      portaudio19-dev \
-      libportaudio2 \
-      libportaudiocpp0 && \
+        build-essential \
+        portaudio19-dev \
+        libportaudio2 \
+        libportaudiocpp0 && \
     rm -rf /var/lib/apt/lists/*
-
+ 
 COPY requirements.txt .
-
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-# Expose the app port
-EXPOSE 3000
-
-# Start the FastAPI app using Uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3000", "--workers", "2"]
+    pip install --prefix=/install --no-cache-dir -r requirements.txt
+ 
+ 
+# Final runtime image
+FROM public.ecr.aws/docker/library/python:3.11-slim
+ 
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+ 
+WORKDIR /app
+ 
+# Runtime dependencies (minimal)
