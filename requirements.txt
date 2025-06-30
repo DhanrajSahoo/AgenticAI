@@ -1,6 +1,5 @@
 fastapi==0.115.12
 SQLAlchemy==2.0.35
-pydantic==2.9.2
 pydantic[email]
 python-dotenv==1.1.0
 sounddevice==0.5.2
