@@ -216,6 +216,15 @@ PREDEFINED_TOOLS_CONFIG = {
                 "label": "Upload-Button",
                 "required": True,
                 "description": "Button to upload the file"
+            },
+            "uploaded_file": {
+                "type": "select",
+                "label": "Select File",
+                "required": True,
+                "default": None,
+                "description": "List of all available file",
+                "options": None,
+                "accept": None
             }
         }
     }
