@@ -218,7 +218,7 @@ PREDEFINED_TOOLS_CONFIG = {
                 "description": "Button to upload the file"
             },
             "uploaded_file": {
-                "type": "select",
+                "type": "textarea",
                 "label": "Select File",
                 "required": True,
                 "default": None,
