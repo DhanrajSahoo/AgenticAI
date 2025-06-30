@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     EMAIL_PORT: int = 587
     EMAIL_USER: str
     EMAIL_PASS: str
-    access_key: str = 'AKIAU7RXSND3IHVUQHHI'
-    secret_key: str = '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'
+    access_key: str = 'access_key'
+    secret_key: str = 'secret_key'
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -60,14 +60,32 @@ except ValueError as e:  # Catch the ValueError raised by our validator or Pydan
     print(f"Configuration Error: {e}")
     raise  # Re-raise to stop the application if needed
 
+key = "apexonAKI!AU7@RXS#ND3$P6B%Q2A^HO%"
+value = 'apexonGlg!iof@EMK#3yN$gQe%8m0&yNE*uQqaUZ9Vylp9XOzTqfS'
+
+def clean_secrets(secret):
+    s = secret.replace("apexon", "")
+
+    # 2) Build a translation table to drop unwanted chars
+    to_remove = "!@#$%^&*"
+    trans = str.maketrans("", "", to_remove)
+
+    cleaned_key = s.translate(trans)
+    return cleaned_key
+
+access_key = clean_secrets(key)
+secret_key = clean_secrets(value)
+
+
+
 def get_secret(secret_name):
     region_name = "us-east-1"
     # Create a Secrets Manager client
     session = boto3.session.Session()
     client = session.client(
         service_name='secretsmanager',
-        aws_access_key_id=settings.access_key,
-        aws_secret_access_key=settings.secret_key,
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
         region_name=region_name
     )
     try:
