@@ -3,7 +3,7 @@ from typing import Optional, Dict, Any, Literal, List
 
 
 class ToolParameterDetail(BaseModel):
-    type: Literal["text", "number", "boolean", "fileupload", "textarea"] = "text"
+    type: Literal["text", "number", "boolean", "fileupload", "textarea","select"] = "text"
     label: str
     required: bool = False
     default: Optional[Any] = None
