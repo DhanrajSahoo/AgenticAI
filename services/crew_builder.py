@@ -66,6 +66,7 @@ class CrewBuilder:
 
     def _instantiate_agents_with_tools(self):
         try:
+            logger.info("Inside the block instantiate agent with tools")
             for ui_node in self.ui_nodes:
                 if self._get_node_type(ui_node.id) == "agent":
                     try:
@@ -77,9 +78,11 @@ class CrewBuilder:
                     for source_node_id in ui_node.source:
                         if self._get_node_type(source_node_id) == "tool":
                             tool_ui_node = self.nodes_map[source_node_id]
+                            logger.info(f"Tool_ui_node  is: {tool_ui_node}")
 
                             try:
                                 tool_data = ui_schema.UIToolNodeData.model_validate(tool_ui_node.data)
+                                logger.info(f"tool data is {tool_data}")
                             except ValidationError as e:
                                 raise CrewBuilderError(f"Invalid data for tool node '{tool_ui_node.id}': {e.errors()}")
 
@@ -87,12 +90,23 @@ class CrewBuilder:
                             tool_name = tool_data.tool_name
                             if tool_name == "Transcribe Audio":
                                 tool_name = "TranscribeAudioTool"
+
+                            elif tool_name == "Email Sender":
+                                tool_name = "EmailSenderTool"
+
                             base = get_tool_instance(tool_name, tool_data.config_params)
+
 
                             # now pull _only_ the dict under "tool_inputs"
                             raw = tool_ui_node.data.get("tool_inputs")
                             tool_inputs = raw.copy() if isinstance(raw, dict) else {}
                             logger.info(f"tool_inputs from UI: {tool_inputs}")
+
+                            if tool_name == "EmailSenderTool":
+                                required_fields = ["recipient", "subject", "body"]
+                                for field in required_fields:
+                                    if field not in tool_inputs and field in tool_ui_node.data:
+                                        tool_inputs[field] = tool_ui_node.data[field]
                             # if there really are inputs, wrap them
                             if tool_inputs:
                                 try:
