@@ -105,7 +105,7 @@ PREDEFINED_TOOLS_CONFIG = {
         "description": "Tool for transcribing audio to text using OpenAI Whisper.",
         "class": TranscribeAudioTool,
         "parameters_schema": {
-            "audio_file_path": {
+            "pdf_path": {
                 "type": "text",
                 "label": "Audio File Path",
                 "required": True,

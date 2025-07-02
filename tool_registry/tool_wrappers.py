@@ -1,7 +1,13 @@
 from crewai.tools import BaseTool
 from typing import Dict, Any, Optional, Type
 from pydantic import BaseModel
+import logging
+from services.aws_services import CloudWatchLogHandler
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = CloudWatchLogHandler('agentic-ai', 'agentic-ai')
+logger.addHandler(handler)
 
 class StaticInputToolWrapper(BaseTool):
     def __init__(self, tool_instance: BaseTool, static_inputs: Dict[str, Any]):
@@ -23,6 +29,7 @@ class StaticInputToolWrapper(BaseTool):
 
     def _run(self, *args: Any, **kwargs: Any) -> str:
         # Validate the static inputs exactly once here
+        logger.info(f"[StaticInputToolWrapper] Using inputs: {self._static_inputs}")
         validated = self.args_schema(**self._static_inputs)
         # Delegate to the real tool
         return self._wrapped_tool.run(validated)
