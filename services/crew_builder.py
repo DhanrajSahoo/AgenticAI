@@ -24,9 +24,9 @@ from langchain_openai import ChatOpenAI
 bedrock_model_prefixes = ["bedrock/anthropic.", "bedrock/amazon.", "bedrock/cohere."]
 
 from services.aws_services import CloudWatchLogHandler
-from crewai.memory import LongTermMemory
-from crewai.memory.storage.ltm_sqlite_storage import LTMSQLiteStorage
-custom_storage_path = "./my_project_storage"
+# from crewai.memory import LongTermMemory
+# from crewai.memory.storage.ltm_sqlite_storage import LTMSQLiteStorage
+# custom_storage_path = "./my_project_storage"
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -323,14 +323,16 @@ class CrewBuilder:
             agents=self.crew_agents,
             tasks=self.ordered_crew_tasks,  # Use the topologically sorted list
             process=Process.sequential,
-            memory=True,
-            long_term_memory=LongTermMemory(
-                storage=LTMSQLiteStorage(
-                    db_path=f"{custom_storage_path}/memory.db"
-                )
-            ),
             verbose=True,
         )
+
+        # memory=True,
+        # long_term_memory=LongTermMemory(
+        #     storage=LTMSQLiteStorage(
+        #         db_path=f"{custom_storage_path}/memory.db"
+        #     )
+        # ),
+
         logger.info(f"Crew before kickoff is :{crew}")
         result = crew.kickoff()
         if isinstance(result, str) and result.lower().startswith("i'm sorry"):
