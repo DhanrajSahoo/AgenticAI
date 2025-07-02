@@ -199,12 +199,12 @@ PREDEFINED_TOOLS_CONFIG = {
         "description": "Tool for extracting relevant text from all type of files",
         "class": RAGQueryTool,
         "parameters_schema": {
-            "filename": {
-                "type": "text",
-                "label": "filename",
-                "required": True,
-                "description": "File name to get the similar text"
-            },
+            # "filename": {
+            #     "type": "text",
+            #     "label": "filename",
+            #     "required": True,
+            #     "description": "File name to get the similar text"
+            # },
             "query": {
                 "type": "text",
                 "label": "question",
