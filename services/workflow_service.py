@@ -147,7 +147,7 @@ def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema
 
         # hand off to your builder
         builder = CrewBuilder(workflow.nodes)
-        result = builder.build_and_run()
+        result = builder.build_and_run(payload)
         return schema.WorkflowExecutionResult(
             workflow_id=workflow_id, status="success", output=str(result)
         )
