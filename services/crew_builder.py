@@ -2,6 +2,8 @@ import logging
 from typing import List, Dict, Any, Optional, Set, Tuple
 from pydantic import ValidationError
 import os
+from fastapi import FastAPI, Depends, HTTPException,APIRouter, HTTPException
+from starlette.datastructures import State
 
 from schemas import workflows_schema as ui_schema
 from tool_registry.registry import get_tool_instance
@@ -24,9 +26,17 @@ from langchain_openai import ChatOpenAI
 bedrock_model_prefixes = ["bedrock/anthropic.", "bedrock/amazon.", "bedrock/cohere."]
 
 from services.aws_services import CloudWatchLogHandler
-# from crewai.memory import LongTermMemory
-# from crewai.memory.storage.ltm_sqlite_storage import LTMSQLiteStorage
-# custom_storage_path = "./my_project_storage"
+from crewai.memory import LongTermMemory
+from crewai.memory.storage.ltm_sqlite_storage import LTMSQLiteStorage
+custom_storage_path = "./my_project_storage"
+
+class AppWithState(FastAPI):
+    state: State
+
+app = AppWithState()
+app.state.current_file_name = None  # type: ignore  # first‐time init
+
+router = APIRouter()
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -312,7 +322,7 @@ class CrewBuilder:
             raise CrewBuilderError(
                 f"Workflow has a cycle in task dependencies or invalid task structure. Could not order all tasks. Problematic task descriptions might be among: {remaining_nodes}")
 
-    def _create_and_kickoff_crew(self) -> Any:
+    def _create_and_kickoff_crew(self,payload) -> Any:
         if not self.crew_agents:
             return "Workflow has no agents defined. Cannot create a crew."
         if not self.ordered_crew_tasks:
@@ -323,15 +333,22 @@ class CrewBuilder:
             agents=self.crew_agents,
             tasks=self.ordered_crew_tasks,  # Use the topologically sorted list
             process=Process.sequential,
+            memory=True,
+            long_term_memory=LongTermMemory(
+                storage=LTMSQLiteStorage(
+                    db_path=f"{custom_storage_path}/memory.db"
+                )
+            ),
             verbose=True,
         )
+        prev = app.state.current_file_name
 
-        # memory=True,
-        # long_term_memory=LongTermMemory(
-        #     storage=LTMSQLiteStorage(
-        #         db_path=f"{custom_storage_path}/memory.db"
-        #     )
-        # ),
+        # if we switched files, clear long‐term memory
+        if prev and prev != payload.file_name:
+            crew.reset_memories(command_type="long")
+
+        # update our “cache”
+        app.state.current_file_name = payload.file_name
 
         logger.info(f"Crew before kickoff is :{crew}")
         result = crew.kickoff()
@@ -342,7 +359,7 @@ class CrewBuilder:
         logger.info(f"The result to be shown is: {result}")
         return result
 
-    def build_and_run(self) -> Any:
+    def build_and_run(self,payload) -> Any:
         try:
             self._instantiate_agents_with_tools()
 
@@ -359,7 +376,7 @@ class CrewBuilder:
                 raise CrewBuilderError("Tasks were defined in the workflow, but none could be instantiated correctly.")
 
             self._resolve_task_dependencies_and_order(raw_task_configs)  # Sets context and orders
-            return self._create_and_kickoff_crew()
+            return self._create_and_kickoff_crew(payload)
 
         except CrewBuilderError as e:
             logger.info(f"error at build and run {e}")
