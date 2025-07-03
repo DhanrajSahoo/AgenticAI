@@ -106,7 +106,7 @@ class Config(object):
     port = 5433  # cf["db"]["port"]
     user = 'postgres'
     password = '123#'
-    openai_key = db_cred.get('Open_AI_key')
+    openai_key = db_cred.get('Open_AI_key_agentic')
     access_key = db_cred.get('access_key')
     secret_key = db_cred.get('secret_key')
     policy_access_key = db_cred.get('policy_access_key')
