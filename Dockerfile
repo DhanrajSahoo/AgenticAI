@@ -16,13 +16,14 @@ RUN apt-get update && \
 
 COPY requirements.txt .
 
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Upgrade pip, install pip-tools, compile a lockfile, then install from that
+RUN pip install --upgrade pip pip-tools && \
+    pip-compile requirements.txt --output-file=requirements.lock && \
+    pip install --no-cache-dir -r requirements.lock
 
+# Copy the rest of your app
 COPY . .
 
-# Expose the app port
 EXPOSE 3000
 
-# Start the FastAPI app using Uvicorn
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3000", "--workers", "2"]
