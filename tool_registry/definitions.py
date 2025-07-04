@@ -7,6 +7,7 @@ from tool_registry.tools.Pdfsearchtool import PDFQueryTool
 from tool_registry.tools.WordSearchTool import DocQueryTool
 from tool_registry.tools.CsvSearchTool import CsvQueryTool
 from tool_registry.tools.RagTool import RAGQueryTool
+from tool_registry.tools.Fileparser import FILEReaderTool
 
 PREDEFINED_TOOLS_CONFIG = {
     "serper_dev_tool": {
@@ -227,5 +228,31 @@ PREDEFINED_TOOLS_CONFIG = {
                 "accept": None
             }
         }
+    },
+    "FILEReaderTool": {
+        "name": "FILEReaderTool",
+        "description": "Tool for extracting relevant text from doc.",
+        "class": FILEReaderTool,
+        "parameters_schema": {
+            "pdf_path": {
+                "type": "text",
+                "label": "pdf File Path",
+                "required": True,
+                "description": "Full path to the pdf file (e.g., /path/to/audio/document.pdf). Agent must provide this."
+            },
+            # "query": {
+            #     "type": "text",
+            #     "label": "question",
+            #     "required": True,
+            #     "description": "query to perform search in pdf file"
+            # },
+            "upload_button": {
+                "type": "fileupload",
+                "label": "Upload-Button",
+                "required": True,
+                "description": "Button to upload the audion file"
+            }
+        }
     }
+    
 }

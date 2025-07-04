@@ -108,6 +108,7 @@ class CrewBuilder:
                                 tool_name = "EmailSenderTool"
 
                             base = get_tool_instance(tool_name, tool_data.config_params)
+                            logger.info(f"The base is{base}")
 
 
                             # now pull _only_ the dict under "tool_inputs"
