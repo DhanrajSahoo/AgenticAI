@@ -145,6 +145,10 @@ def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema
                 elif payload.file_path:
                     node.data["tool_inputs"]["file_name"] = os.path.basename(payload.file_path)
 
+            #File readTool
+            elif name == "FILEReaderTool" and payload.file_path:
+                node.data["tool_inputs"]["pdf_path"] = payload.file_path
+
         # hand off to your builder
         builder = CrewBuilder(workflow.nodes)
         result = builder.build_and_run()
