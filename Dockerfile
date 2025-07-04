@@ -16,11 +16,9 @@ RUN apt-get update && \
 
 COPY requirements.txt .
 
-# Upgrade pip, install pip-tools, compile a lockfile, then install from that
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir --use-deprecated=legacy-resolver -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of your app
 COPY . .
 
 EXPOSE 3000
