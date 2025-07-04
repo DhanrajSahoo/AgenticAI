@@ -1,8 +1,15 @@
 import inspect
 from typing import List, Dict, Any, Optional, Union
+import logging
 
 from schemas.tools_schema import ToolDefinition, ToolParameterDetail
 from .definitions import PREDEFINED_TOOLS_CONFIG
+from services.aws_services import CloudWatchLogHandler
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = CloudWatchLogHandler('agentic-ai', 'agentic-ai')
+logger.addHandler(handler)
 
 _NUMERIC_ID_TO_STRING_ID_MAP: Optional[Dict[int, str]] = None
 _STRING_ID_TO_NUMERIC_ID_MAP: Optional[Dict[str, int]] = None
@@ -35,8 +42,11 @@ def get_all_tool_definitions() -> List[ToolDefinition]:
     """Generates tool definitions for the API, including a runtime numeric_id."""
     _build_tool_id_maps()
     defs = []
+    logger.info(f"PREDEFINED_TOOLS_CONFIG{PREDEFINED_TOOLS_CONFIG}")
 
     sorted_tool_string_ids = sorted(PREDEFINED_TOOLS_CONFIG.keys())
+
+    logger.info(f"sorted_tool_string_ids: {sorted_tool_string_ids}")
 
     for tool_string_id in sorted_tool_string_ids:
         config = PREDEFINED_TOOLS_CONFIG[tool_string_id]
@@ -52,6 +62,8 @@ def get_all_tool_definitions() -> List[ToolDefinition]:
 
         class_obj = config.get("class")
         class_name_str = class_obj.__name__ if class_obj else None
+
+        logger.info(f"Config from tools : {config}")
 
         defs.append(ToolDefinition(
             numeric_id=numeric_id,

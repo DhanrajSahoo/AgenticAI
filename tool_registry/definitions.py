@@ -240,12 +240,6 @@ PREDEFINED_TOOLS_CONFIG = {
                 "required": True,
                 "description": "Full path to the pdf file (e.g., /path/to/audio/document.pdf). Agent must provide this."
             },
-            # "query": {
-            #     "type": "text",
-            #     "label": "question",
-            #     "required": True,
-            #     "description": "query to perform search in pdf file"
-            # },
             "upload_button": {
                 "type": "fileupload",
                 "label": "Upload-Button",
