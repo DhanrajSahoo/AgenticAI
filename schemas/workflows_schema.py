@@ -38,6 +38,7 @@ class UINode(BaseModel):
     parents: List[str] = Field(default_factory=list)
     childs: List[str] = Field(default_factory=list)
     source: List[str] = Field(default_factory=list)
+    viewport: Dict[str, Any] = {}
 
 # Workflow API Payloads
 class WorkflowDataContent(BaseModel):
