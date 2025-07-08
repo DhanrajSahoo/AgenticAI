@@ -13,12 +13,12 @@ from tool_registry.tools.AudioRecorder import VoiceRecorderTool
 #from validators import file_validation
 
 
-from db.models import Files, Document
+from db.models import Files, Document, Creds
 from core.config import Config
 from db.database import get_db_session
 from db.vector_embeddings import Embeddings
 from schemas import workflows_schema as schema
-from schemas.tools_schema import FileCreate, FileQuery, FileDelete
+from schemas.tools_schema import FileCreate, FileQuery, FileDelete, CredentialPayload
 from services.aws_services import upload_pdf_to_s3_direct
 from db.crud import create_file_record, get_file_url_by_name, create_documents
 from services.aws_services import CloudWatchLogHandler, delete_file_from_db_and_s3
@@ -355,6 +355,26 @@ def list_filenames(db: Session = Depends(get_db_session)):
         )
         # rows is a list of 1-tuples like [("file1.csv",), ("report.pdf",), ...]
         return [filename for (filename,) in rows]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unable to fetch filenames: {e}")
+
+
+@router.get("/add_creds/", status_code=201)
+def add_credentials(payload: CredentialPayload,db: Session = Depends(get_db_session)):
+    """
+    Returns a list of all distinct filenames stored in vector_db.
+    """
+    try:
+        new_cred = Creds(
+            name=payload.name,
+            key=payload.key,
+            region=payload.region,
+            value=payload.value
+        )
+        db.add(new_cred)
+        db.commit()
+        db.refresh(new_cred)
+        return f"Credential added with ID: {new_cred.id}"
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unable to fetch filenames: {e}")
 
