@@ -35,3 +35,12 @@ class Document(Base):
     text = Column(Text, nullable=False)
     embedding = Column(Vector(384), nullable=False)
     url = Column(Text, nullable=False)
+
+class Creds(Base):
+    __tablename__ = "credentials"   # ← replace with your actual table name
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    key = Column(Text, nullable=True)
+    value = Column(Text, nullable=True)
+    region= Column(Text, nullable=True)
