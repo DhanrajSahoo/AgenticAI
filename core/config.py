@@ -4,7 +4,7 @@ from pydantic import model_validator
 from typing import Dict, Any
 import os
 
-from utils.aws_secrets import clean_secrets, get_secret  # <-- decoupled
+from utils.aws_secrets import clean_secrets, get_secret, decrypt_message
 
 load_dotenv()
 
@@ -53,9 +53,11 @@ except ValueError as e:
     raise
 
 # ↓ These are now decoupled from the services layer
+access_key = decrypt_message("Z0FBQUFBQm9iaUNqWF9KODliX1MzdG93bExHWkwxcTdkWXZ2eGs0TXA2aE5qNHBzTll3cmFOZVRqSEtIVjMxU2lrczE0c0xhOFlFSUl6cjFndWtFbVoyaUM0aHlLdTJZeWRjNHZja3VDTHdJSGNkSjJLbUVKa2c9", "d1RRdFdWd2dCQWFPeG1ZMGpWVDJScE5QQVZmM3B6ekw2ellOQTRuaHhQaz0=")
+secret_key = decrypt_message("Z0FBQUFBQm9iaUlVTUFla2lndlM0REVkNFFlc3ZiX0xnN1kzZElHTnMzRTdid191TDFKeS1UMUszc0ZsaW1ySWZXUXowRndwSUJzSDFLTXNlUy14dlJMYWdQYVFtRVdZTFdyRWk2Si1NMVk3Y2RuTUV1aEVaLUYwaXZFV0tRN3g2TDlSWkc4ZFlYa1k=", "S0ZEcnR2MmpJbjZVZ3MtX25XMHlObTFqVWJEQ3o0S1hMS0lNdG9kTW92RT0=")
 
-access_key = clean_secrets("apexonAKI!ASC@ZMC#YZB$SZT%4TM^45")
-secret_key = clean_secrets('apexonOnR!MAj@NPo#DOq$m1c%Ywu^cJQ&GG/!TJG@uI2#v4g$Rj8%ZJpf')
+# access_key = clean_secrets("apexonAKI!ASC@ZMC#YZB$SZT%4TM^45")
+# secret_key = clean_secrets('apexonOnR!MAj@NPo#DOq$m1c%Ywu^cJQ&GG/!TJG@uI2#v4g$Rj8%ZJpf')
 db_cred = get_secret("AgenticAI-creds", access_key, secret_key)
 
 class Config(object):
