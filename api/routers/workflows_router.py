@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Form, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Dict
 import uuid
@@ -112,3 +112,45 @@ async def api_run_workflow(payload:SemanticSearch,
     except Exception as e:
         logger.error(f"Unexpected error running workflow {workflow_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Workflow execution failed: {str(e)}")
+    
+@router.post("/bread_usecase")
+async def api_run_breadusecase(
+    full_name: str = Form(...),
+    date_of_birth: str = Form(...),
+    social_security_number: str = Form(...),
+    street_no: str = Form(...),
+    email: str = Form(...),
+    mobile: str = Form(...),
+    employment_status: str = Form(...),
+    income: str = Form(...),
+    monthly_debt_payments: str = Form(...),
+    files: UploadFile = File(...),
+    db: Session = Depends(get_db_session)
+):
+
+    form_data = {
+        "full_name": full_name,
+        "date_of_birth": date_of_birth,
+        "ssn": social_security_number,
+        "address": street_no,
+        "email": email,
+        "mobile": mobile,
+        "employment_status": employment_status,
+        "income": income,
+        "monthly_debt_payments": monthly_debt_payments,
+    }
+
+    # ✅ Save the uploaded file temporarily (or upload to S3 etc.)
+    # file_location = f"/tmp/{id_proof.filename}"
+    # with open(file_location, "wb") as f:
+    #     f.write(await id_proof.read())
+
+    # form_data["id_proof_path"] = file_location  # Add the file path
+
+    try:
+        return workflow_service.run_credit_card_workflow(
+            data=form_data,
+            db=db
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

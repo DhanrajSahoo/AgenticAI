@@ -157,3 +157,13 @@ def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema
         )
     except Exception as e:
         logger.info(f"error at running workflow:{e}")
+
+def run_credit_card_workflow(data: dict, db: Session):
+    workflow_id = uuid.UUID("30908583-0938-4d14-a101-99572510ae89")
+    class WorkflowPayload:
+        def __init__(self, form_data):
+            self.form_data = form_data
+
+    payload = WorkflowPayload(data)
+    return run_workflow_service(payload, db, workflow_id)
+
