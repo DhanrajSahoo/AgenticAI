@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Form, UploadFile, File
 from sqlalchemy.orm import Session
-from typing import List, Dict
+from typing import List, Dict, Optional
 import uuid
 import logging
 import json
@@ -128,16 +128,15 @@ async def api_run_breadusecase(
     email: str = Form(...),
     mobile: str = Form(...),
     employment_status: str = Form(...),
-    Annual_income: str = Form(...),
+    annual_income: str = Form(...),
     monthly_housing_payment: str = Form(...),
     credit_score: str = Form(...),
     total_credit_used: str = Form(...),
     deliquencies: str = Form(...),
     bankrupties: str = Form(...),
     monthly_debt_payments: str = Form(...),
-    total_credit_Limit: str = Form(...),
-    files: UploadFile = File(...),
-
+    total_credit_limit: str = Form(...),
+    files: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db_session)
 ):
     logger.info("Received form submission.")
@@ -151,12 +150,12 @@ async def api_run_breadusecase(
         "email": email,
         "mobile": mobile,
         "employment_status": employment_status,
-        "income": Annual_income,
+        "income": annual_income,
         "monthly_debt_payments": monthly_debt_payments,
         "monthly_housing_payment":monthly_housing_payment,
         "Credit_Score":credit_score,
         "Total_credit_used":total_credit_used,
-        "Total_credit_Limit":total_credit_Limit,
+        "Total_credit_Limit":total_credit_limit,
         "Deliquencies":deliquencies,
         "Bankrupties":bankrupties,
         "city":city,
