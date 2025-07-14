@@ -115,6 +115,7 @@ def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema
         for node in workflow.nodes:
             name = node.data.get("tool_name")
             logger.info(f"The  tool name is: : {name}")
+            node.data.setdefault("tool_inputs", {})
             if not name:
                 continue
 
@@ -147,7 +148,8 @@ def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema
 
             #File readTool
             elif name == "FILEReaderTool" and payload.file_path:
-                node.data["tool_inputs"]["pdf_path"] = payload.file_path
+                logger.info(f"Injecting form data into FILEReaderTool at node {node.id}")
+                node.data["tool_inputs"]["form_data"] = payload.form_file_path
 
         # hand off to your builder
         builder = CrewBuilder(workflow.nodes)
@@ -157,3 +159,51 @@ def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema
         )
     except Exception as e:
         logger.info(f"error at running workflow:{e}")
+
+def run_credit_card_workflow(db: Session,data: dict = None):
+    workflow_id = uuid.UUID("095e3a52-85df-4037-ab04-c95dd646976d")
+    logger.info(f"Running workflow with workflow_id: {workflow_id}")
+
+    # Retrieve the workflow from DB
+    workflow = get_workflow(db, workflow_id)
+    if not workflow:
+        raise ValueError(f"Workflow {workflow_id} not found")
+
+    # Minimal payload just to satisfy the workflow structure
+    class WorkflowPayload:
+        def __init__(self, form_data_json):
+            self.form_data = form_data_json
+            self.prompt = None
+            self.file_path = None
+            self.file_name = None
+
+    payload = WorkflowPayload(data or {})  # Safe default
+    logger.info(f"The payload is{[payload]}")
+    workflow = get_workflow(db, workflow_id)
+    logger.info(f"The workflow is{[workflow]}")
+    if not workflow:
+        raise ValueError(f"Workflow {workflow_id} not found")
+
+    # Inject only if data was provided
+    if data:
+        for node in workflow.nodes:
+            if node.data.get("task_name") == "Data collection":
+                logger.info(f"Injecting form data into 'Data collection' task at node {node.id}")
+                logger.info(f"Form data being injected: {payload.form_data}")
+                node.data.setdefault("tool_inputs", {})
+                node.data["tool_inputs"]["form_data"] = payload.form_data
+                
+
+                # Optional: Inject into task prompt for LLM agents to pick it up naturally
+                node.data["task_description"] += (
+                    f"\n\nUser Form Data:\n{payload.form_data}\n"
+                )
+
+    builder = CrewBuilder(workflow.nodes)
+    result = builder.build_and_run(payload)
+
+    logger.info("Workflow executed successfully.")
+    return schema.WorkflowExecutionResult(
+        workflow_id=workflow_id, status="success", output=str(result)
+    )
+

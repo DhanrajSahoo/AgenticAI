@@ -34,3 +34,9 @@ class SemanticSearch(BaseModel):
     prompt : Optional[str] = None
     file_name: Optional[str] = None
     file_path: Optional[str] = None
+
+class CredentialPayload(BaseModel):
+    name: str
+    key: str | None = None
+    value: str | None = None
+    region: str | None = None

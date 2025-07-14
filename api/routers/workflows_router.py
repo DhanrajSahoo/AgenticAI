@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Form, UploadFile, File
 from sqlalchemy.orm import Session
-from typing import List, Dict
+from typing import List, Dict, Optional
 import uuid
 import logging
-
+import json
 from schemas import workflows_schema as schema
 from services import workflow_service
 from services.crew_builder import CrewBuilderError
@@ -21,6 +21,7 @@ router = APIRouter(
     prefix="/workflows",
     tags=["Workflows"]
 )
+
 
 
 @router.post("/", response_model=schema.WorkflowResponse, status_code=201)
@@ -112,3 +113,66 @@ async def api_run_workflow(payload:SemanticSearch,
     except Exception as e:
         logger.error(f"Unexpected error running workflow {workflow_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Workflow execution failed: {str(e)}")
+    
+@router.post("/bread_usecase", status_code=200)
+async def api_run_breadusecase(
+    full_name: str = Form(...),
+    date_of_birth: str = Form(...),
+    social_security_number: str = Form(...),
+    street_no: str = Form(...),
+    city: str = Form(...),
+    state: str = Form(...),
+    zip_code: str = Form(...),
+    residential_status: str = Form(...),
+    current_address_length: str = Form(...),
+    email: str = Form(...),
+    mobile: str = Form(...),
+    employment_status: str = Form(...),
+    annual_income: str = Form(...),
+    monthly_housing_payment: str = Form(...),
+    credit_score: str = Form(...),
+    total_credit_used: str = Form(...),
+    deliquencies: str = Form(...),
+    bankrupties: str = Form(...),
+    monthly_debt_payments: str = Form(...),
+    total_credit_limit: str = Form(...),
+    files: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db_session)
+):
+    logger.info("Received form submission.")
+
+   
+    form_data = {
+        "full_name": full_name,
+        "date_of_birth": date_of_birth,
+        "ssn": social_security_number,
+        "address": street_no,
+        "email": email,
+        "mobile": mobile,
+        "employment_status": employment_status,
+        "income": annual_income,
+        "monthly_debt_payments": monthly_debt_payments,
+        "monthly_housing_payment":monthly_housing_payment,
+        "Credit_Score":credit_score,
+        "Total_credit_used":total_credit_used,
+        "Total_credit_Limit":total_credit_limit,
+        "Deliquencies":deliquencies,
+        "Bankrupties":bankrupties,
+        "city":city,
+        "state":state,
+        "zip_code":zip_code,
+        "residential_status":residential_status,
+        "current_address_length":current_address_length,
+    }
+
+    logger.info(f"Form Data Received: {form_data}")
+    form_data_json = json.dumps(form_data)
+
+    try:
+        logger.info("Running workflow with DB-stored payload (ignoring form data for now).")
+        # ✅ Currently we ignore form_data in workflow run, but keep it available here
+        result = workflow_service.run_credit_card_workflow(data=form_data_json, db=db)
+        return result
+    except Exception as e:
+        logger.exception("Error during workflow execution.")
+        raise HTTPException(status_code=500, detail=str(e))
