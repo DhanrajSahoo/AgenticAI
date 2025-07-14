@@ -17,7 +17,9 @@ app = FastAPI(
 )
 
 origins = [
-    "*",         # todo: change after the UI url
+    "*", 
+    "https://dev3.apexon-genesys.com"
+    "https://dev3.apexon-genesys.com/cc-qualifier",       # todo: change after the UI url
 ]
 
 app.add_middleware(
