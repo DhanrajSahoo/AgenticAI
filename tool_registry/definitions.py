@@ -8,6 +8,8 @@ from tool_registry.tools.WordSearchTool import DocQueryTool
 from tool_registry.tools.CsvSearchTool import CsvQueryTool
 from tool_registry.tools.RagTool import RAGQueryTool
 from tool_registry.tools.Fileparser import FILEReaderTool
+from tool_registry.tools.TavilyTool import TavilyQueryTool
+
 
 PREDEFINED_TOOLS_CONFIG = {
     "serper_dev_tool": {
@@ -245,6 +247,19 @@ PREDEFINED_TOOLS_CONFIG = {
                 "label": "Upload-Button",
                 "required": True,
                 "description": "Button to upload the audion file"
+            }
+        }
+    },
+    "TavilyTool": {
+        "name": "Tavily Search Tool",
+        "description": "Runs a professional/personal detail search via Tavily",
+        "class": TavilyQueryTool,
+        "parameters_schema": {
+            "query": {
+                "type": "text",
+                "label": "Query",
+                "required": True,
+                "description": "what you want to know about a person"
             }
         }
     }
