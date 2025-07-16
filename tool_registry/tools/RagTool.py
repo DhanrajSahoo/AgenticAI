@@ -25,7 +25,7 @@ class RAGQuerySchema(BaseModel):
         alias="pdf_path",
         description="Path to the file (alias: pdf_path)"
     )
-    query: str = Field(..., description="Question to ask the file")
+    prompt: str = Field(..., description="Question to ask the file")
 
     model_config = {
         "populate_by_name": True,    # allow populating by the field name too
@@ -35,23 +35,23 @@ class RAGQuerySchema(BaseModel):
 
 class RAGQueryTool(BaseTool):
     name: str = "File Query Tool"
-    description: str = "Runs a query against a File using RAG and returns the result"
+    description: str = "Runs a prompt against a File using RAG and returns the result"
 
     args_schema: Type[RAGQuerySchema] = RAGQuerySchema
 
-    def _run(self, file_name: str, query: str) -> str:
+    def _run(self, file_name: str, prompt: str) -> str:
         try:
             # file_name=file_name[5:]
-            logger.info(f"Inside RAG tool filename:{file_name}, query:{query}")
-            similar_text = embed.get_similar_text(file_name=file_name,prompt=query)
+            logger.info(f"Inside RAG tool filename:{file_name}, prompt:{prompt}")
+            similar_text = embed.get_similar_text(file_name=file_name,prompt=prompt)
             # print(f"similar_text{similar_text}")
             try:
-                return f"Query:-{query}\n\nContext:-{similar_text}"
+                return f"Query:-{prompt}\n\nContext:-{similar_text}"
             except Exception as e:
                 logger.info(f"Query failed: {e}")
                 return f"Query failed: {e}"
         except Exception as e:
-            logger.info(f"error ragquery tool run{e}")
+            logger.info(f"error ragprompt tool run{e}")
 
     def run(self, input_data: RAGQuerySchema) -> str:
-        return self._run(input_data.file_name, input_data.query)
+        return self._run(input_data.file_name, input_data.prompt)
