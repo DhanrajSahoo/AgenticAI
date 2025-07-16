@@ -17,23 +17,23 @@ handler = CloudWatchLogHandler('agentic-ai', 'agentic-ai')
 logger.addHandler(handler)
 
 class CsvQuerySchema(BaseModel):
-    csv_path: str = Field(..., description="Path to the Word file")
-    query: str = Field(..., description="Question to ask the CSV")
+    file_path: str = Field(..., description="Path to the Word file")
+    prompt: str = Field(..., description="Question to ask the CSV")
 
 
 class CsvQueryTool(BaseTool):
     name: str = "CSV Query Tool"
-    description: str = "Runs a query against a CSV using RAG and returns the result"
+    description: str = "Runs a prompt against a CSV using RAG and returns the result"
 
     args_schema: Type[CsvQuerySchema] = CsvQuerySchema
 
-    def _run(self, csv_path: str, query: str) -> str:
+    def _run(self, file_path: str, prompt: str) -> str:
         if "OPENAI_API_KEY" not in os.environ:
             raise RuntimeError("Please set OPENAI_API_KEY in env vars before using CSVQueryTool")
         logger.info("inside csv tool going to run tool")
 
         rag_tool = CSVSearchTool(
-            csv=csv_path,
+            csv=file_path,
             config={
                 "llm": {
                     "provider": "openai",
@@ -52,11 +52,11 @@ class CsvQueryTool(BaseTool):
         )
 
         try:
-            result = rag_tool._run(query)
+            result = rag_tool._run(prompt)
             logger.info(f"result: {result}")
             return result
         except Exception as e:
             return f"Query failed: {e}"
 
     def run(self, input_data: CsvQuerySchema) -> str:
-        return self._run(input_data.csv_path, input_data.query)
+        return self._run(input_data.file_path, input_data.prompt)
