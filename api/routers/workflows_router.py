@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, Form, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Dict, Optional
 import uuid
+from db.vector_embeddings import Embeddings
 import logging
 import json
 from schemas import workflows_schema as schema
@@ -9,8 +10,9 @@ from services import workflow_service
 from services.crew_builder import CrewBuilderError
 from db.database import get_db_session
 from schemas.tools_schema import SemanticSearch
-
 from services.aws_services import CloudWatchLogHandler
+
+embed = Embeddings()
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -164,9 +166,14 @@ async def api_run_breadusecase(
         "residential_status":residential_status,
         "current_address_length":current_address_length,
     }
-    
-    validation_data = files
-    logger.info(f"validation data is:{validation_data}")
+    if files:
+        pdf_text = embed._extract_pdf_text(files)
+        logger.info(f"Extracted PDF content:\n{pdf_text}")
+    else:
+        pdf_text = None
+
+
+    logger.info(f"validation data is:{pdf_text}")
     logger.info(f"Form Data Received: {form_data}")
     form_data_json = json.dumps(form_data)
     # Identity_proof = file.
