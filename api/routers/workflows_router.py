@@ -4,6 +4,8 @@ from typing import List, Dict, Optional
 import uuid
 from db.vector_embeddings import Embeddings
 import logging
+import io
+from pypdf import PdfReader
 import json
 from schemas import workflows_schema as schema
 from services import workflow_service
@@ -166,11 +168,11 @@ async def api_run_breadusecase(
         "residential_status":residential_status,
         "current_address_length":current_address_length,
     }
-    if files:
-        pdf_text = embed._extract_pdf_text(files)
-        logger.info(f"Extracted PDF content:\n{pdf_text}")
-    else:
-        pdf_text = None
+    file_content = files.file.read()  # Read file content as bytes
+    pdf_stream = io.BytesIO(file_content)  # Wrap in a binary stream
+    reader = PdfReader(pdf_stream)  # Use PyPDF reader
+
+    pdf_text = "\n".join(page.extract_text() or "" for page in reader.pages)
 
 
     logger.info(f"validation data is:{pdf_text}")
