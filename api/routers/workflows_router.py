@@ -7,6 +7,8 @@ import logging
 import io
 from pypdf import PdfReader
 import json
+import io
+from pypdf import PdfReader
 from schemas import workflows_schema as schema
 from services import workflow_service
 from services.crew_builder import CrewBuilderError
@@ -182,7 +184,7 @@ async def api_run_breadusecase(
     try:
         logger.info("Running workflow with DB-stored payload (ignoring form data for now).")
         # ✅ Currently we ignore form_data in workflow run, but keep it available here
-        result = workflow_service.run_credit_card_workflow(data=form_data_json, db=db)
+        result = workflow_service.run_credit_card_workflow(data=form_data_json,pdf_data=pdf_text, db=db)
         return result
     except Exception as e:
         logger.exception("Error during workflow execution.")
