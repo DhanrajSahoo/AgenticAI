@@ -5,6 +5,8 @@ import uuid
 from db.vector_embeddings import Embeddings
 import logging
 import json
+import io
+from pypdf import PdfReader
 from schemas import workflows_schema as schema
 from services import workflow_service
 from services.crew_builder import CrewBuilderError
@@ -166,11 +168,11 @@ async def api_run_breadusecase(
         "residential_status":residential_status,
         "current_address_length":current_address_length,
     }
-    if files:
-        pdf_text = embed._extract_pdf_text(files)
-        logger.info(f"Extracted PDF content:\n{pdf_text}")
-    else:
-        pdf_text = None
+    file_content = files.file.read()  # Read file content as bytes
+    pdf_stream = io.BytesIO(file_content)  # Wrap in a binary stream
+    reader = PdfReader(pdf_stream)  # Use PyPDF reader
+
+    pdf_text = "\n".join(page.extract_text() or "" for page in reader.pages)
 
 
     logger.info(f"validation data is:{pdf_text}")
@@ -180,7 +182,7 @@ async def api_run_breadusecase(
     try:
         logger.info("Running workflow with DB-stored payload (ignoring form data for now).")
         # ✅ Currently we ignore form_data in workflow run, but keep it available here
-        result = workflow_service.run_credit_card_workflow(data=form_data_json, db=db)
+        result = workflow_service.run_credit_card_workflow(data=form_data_json,pdf_data=pdf_text, db=db)
         return result
     except Exception as e:
         logger.exception("Error during workflow execution.")
