@@ -5,6 +5,7 @@ import requests
 import chromadb
 from io import BytesIO
 from typing import List
+from tool_registry.tools.Web_scrapper import web_scrapper
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, HTTPException, Depends,File, UploadFile, Form
 from crewai_tools import FileReadTool, CSVSearchTool, PDFSearchTool
@@ -245,6 +246,22 @@ async def upload_file(files: List[UploadFile] = File(...),db: Session = Depends(
                 all_chunks.extend(chunk_texts)
                 file = FileCreate(file_name=f.filename, file_url=public_url)
                 create_file_record(db, file)
+
+            elif f.filename[-5:].lower() == '.xlsx' or f.filename[-4:].lower() == '.xls':
+                f.file.seek(0)
+                file_name += f.filename
+                path = await save_upload_to_tempfile(f)
+                file_path += path
+                public_url = upload_pdf_to_s3_direct(
+                    file=f, bucket_name="apexon-agentic-ai", s3_key=f.filename
+                )
+                url += public_url
+                # raw_text = embed._extract_yaml_text(path)
+                # chunk_texts = embed._chunk_text(raw_text)
+                # all_chunks.extend(chunk_texts)
+                file = FileCreate(file_name=f.filename, file_url=public_url)
+                create_file_record(db, file)
+
 
             else:
                 text = None

@@ -96,6 +96,8 @@ class CrewBuilder:
                             try:
                                 tool_data = ui_schema.UIToolNodeData.model_validate(tool_ui_node.data)
                                 logger.info(f"tool data is {tool_data}")
+
+                                
                             except ValidationError as e:
                                 raise CrewBuilderError(f"Invalid data for tool node '{tool_ui_node.id}': {e.errors()}")
 
@@ -106,6 +108,9 @@ class CrewBuilder:
 
                             elif tool_name == "Email Sender":
                                 tool_name = "EmailSenderTool"
+
+                            elif tool_name == "Tavily Search Tool":
+                                tool_name = "TavilyTool"
 
                             base = get_tool_instance(tool_name, tool_data.config_params)
                             logger.info(f"The base is{base}")
@@ -121,7 +126,11 @@ class CrewBuilder:
                                 for field in required_fields:
                                     if field not in tool_inputs and field in tool_ui_node.data:
                                         tool_inputs[field] = tool_ui_node.data[field]
-                            # if there really are inputs, wrap them
+                            if tool_name == "WebScrappingTool":
+                                if "file_path" not in tool_inputs and "file_path" in tool_ui_node.data:
+                                    tool_inputs["file_path"] = tool_ui_node.data["file_path"]
+                                    logger.info(f"Injected 'file_path' from 'file_path': {tool_inputs['file_path']}")
+
                             if tool_inputs:
                                 try:
                                     base = StaticInputToolWrapper(base, tool_inputs)
