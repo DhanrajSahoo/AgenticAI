@@ -108,7 +108,7 @@ PREDEFINED_TOOLS_CONFIG = {
         "description": "Tool for transcribing audio to text using OpenAI Whisper.",
         "class": TranscribeAudioTool,
         "parameters_schema": {
-            "pdf_path": {
+            "file_path": {
                 "type": "text",
                 "label": "Audio File Path",
                 "required": True,
@@ -127,13 +127,13 @@ PREDEFINED_TOOLS_CONFIG = {
         "description": "Tool for extracting relevant text from doc.",
         "class": PDFQueryTool,
         "parameters_schema": {
-            "pdf_path": {
+            "file_path": {
                 "type": "text",
                 "label": "pdf File Path",
                 "required": True,
                 "description": "Full path to the pdf file (e.g., /path/to/audio/document.pdf). Agent must provide this."
             },
-            "query": {
+            "prompt": {
                 "type": "text",
                 "label": "question",
                 "required": True,
@@ -152,13 +152,13 @@ PREDEFINED_TOOLS_CONFIG = {
         "description": "Tool for extracting relevant text from doc",
         "class": DocQueryTool,
         "parameters_schema": {
-            "word_path": {
+            "file_path": {
                 "type": "text",
                 "label": "word File Path",
                 "required": True,
                 "description": "Full path to the word file (e.g., /path/to/audio/document.docx). Agent must provide this."
             },
-            "query": {
+            "prompt": {
                 "type": "text",
                 "label": "question",
                 "required": True,
@@ -177,13 +177,13 @@ PREDEFINED_TOOLS_CONFIG = {
         "description": "Tool for extracting relevant text from CSV data frame",
         "class": CsvQueryTool,
         "parameters_schema": {
-            "csv_path": {
+            "file_path": {
                 "type": "text",
                 "label": "csv File Path",
                 "required": True,
                 "description": "Full path to the csv file (e.g., /path/to/audio/document.csv). Agent must provide this."
             },
-            "query": {
+            "prompt": {
                 "type": "text",
                 "label": "question",
                 "required": True,
@@ -208,7 +208,7 @@ PREDEFINED_TOOLS_CONFIG = {
             #     "required": True,
             #     "description": "File name to get the similar text"
             # },
-            "query": {
+            "prompt": {
                 "type": "text",
                 "label": "question",
                 "required": True,
@@ -236,7 +236,7 @@ PREDEFINED_TOOLS_CONFIG = {
         "description": "Tool for extracting relevant text from doc.",
         "class": FILEReaderTool,
         "parameters_schema": {
-            "pdf_path": {
+            "file_path": {
                 "type": "text",
                 "label": "pdf File Path",
                 "required": True,
