@@ -20,7 +20,7 @@ logger.addHandler(handler)
 
 
 class DocQuerySchema(BaseModel):
-    doc_path: str = Field(..., description="Path to the Word file")
+    file_path: str = Field(..., description="Path to the Word file")
     query: str = Field(..., description="Question to ask the DOC")
 
 
@@ -29,12 +29,12 @@ class DocQueryTool(BaseTool):
     description: str = "Runs a query against a DOC using RAG and returns the result"
     args_schema: Type[BaseModel] = DocQuerySchema  # ✅ This is correct now
 
-    def _run(self, doc_path: str, query: str) -> str:
-        texts = embed._extract_docx_text(doc_path)
+    def _run(self, file_path: str, query: str) -> str:
+        texts = embed._extract_docx_text(file_path)
         chunks = embed._chunk_text(texts)
         res = embed.provide_similar_txt_chroma(chunks, query, 'cosine')
         result = f"Query:-{query}\n\nContext:-{res}"
         return result
 
     def run(self, input_data: DocQuerySchema) -> str:
-        return self._run(input_data.doc_path, input_data.query)
+        return self._run(input_data.file_path, input_data.query)
