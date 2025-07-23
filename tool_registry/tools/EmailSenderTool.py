@@ -4,7 +4,9 @@ from dotenv import load_dotenv
 from email.mime.text import MIMEText
 from core.config import settings
 import smtplib
-from typing import Type
+from typing import Type ,Union, Any
+from pydantic import BaseModel, Field
+import json
 import os
 
 # Step 1: Define the input schema
@@ -44,5 +46,20 @@ class EmailSenderTool(BaseTool):
         except Exception as e:
             return f"❌ Failed to send email: {str(e)}"
 
-    def run(self, input_data: EmailSendSchema) -> str:
-        return self._run(input_data.recipient, input_data.subject, input_data.body)
+    def run(self, input_data: Union[EmailSendSchema, str, dict, Any] = None) -> str:
+        if isinstance(input_data, EmailSendSchema):
+            data = input_data.model_dump()
+        elif isinstance(input_data, str):
+            data = json.loads(input_data)
+        elif isinstance(input_data, dict):
+            data = input_data
+        else:
+            # StaticInputToolWrapper path or weird case
+            data = getattr(self, "_static_inputs", {})
+        # merge static recipient if present
+        if hasattr(self, "_static_inputs"):
+            data = {**self._static_inputs, **data}
+        print("EmailSenderTool received:", data)  # Should show all 3 keys
+
+        validated = EmailSendSchema(**data)
+        return self._run(validated.recipient, validated.subject, validated.body)
