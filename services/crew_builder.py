@@ -116,11 +116,16 @@ class CrewBuilder:
                             tool_inputs = raw.copy() if isinstance(raw, dict) else {}
                             logger.info(f"tool_inputs from UI: {tool_inputs}")
 
-                            if tool_name == "EmailSenderTool":
-                                required_fields = ["recipient", "subject", "body"]
-                                for field in required_fields:
-                                    if field not in tool_inputs and field in tool_ui_node.data:
-                                        tool_inputs[field] = tool_ui_node.data[field]
+                            #new condition not to take EmailSenderTooli inputs to tool wrapper
+                            if tool_ui_node.data.get('tool_name') == 'EmailSenderTool':
+                                agent_tools.append(base)
+                                continue
+
+                            # if tool_name == "EmailSenderTool":
+                            #     required_fields = ["recipient", "subject", "body"]
+                            #     for field in required_fields:
+                            #         if field not in tool_inputs and field in tool_ui_node.data:
+                            #             tool_inputs[field] = tool_ui_node.data[field]
                             # if there really are inputs, wrap them
                             if tool_inputs:
                                 try:
