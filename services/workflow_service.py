@@ -123,19 +123,19 @@ def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema
 
             # always inject the user prompt if present
             if payload.prompt:
-                node.data["tool_inputs"]["query"] = payload.prompt
+                node.data["tool_inputs"]["prompt"] = payload.prompt
 
             # CSV
             if name in ("CsvSearchTool", "CSV Query Tool") and payload.file_path:
-                node.data["tool_inputs"]["csv_path"] = payload.file_path
+                node.data["tool_inputs"]["file_path"] = payload.file_path
 
             # PDF Query Tool
             elif name == "PdfSearchTool" and payload.file_path:
-                node.data["tool_inputs"]["pdf_path"] = payload.file_path
+                node.data["tool_inputs"]["file_path"] = payload.file_path
 
             # TranscribeAudioTool
             elif name in ("Transcribe Audio", "TranscribeAudioTool") and payload.file_path:
-                node.data["tool_inputs"]["pdf_path"] = payload.file_path
+                node.data["tool_inputs"]["file_path"] = payload.file_path
 
 
             # RAG Tool
@@ -143,6 +143,7 @@ def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema
                 # prefer explicit file_name, else fallback to basename of file_path
                 if getattr(payload, "file_name", None):
                     node.data["tool_inputs"]["file_name"] = payload.file_name
+                    node.data["tool_inputs"]["prompt"] = payload.prompt
                 elif payload.file_path:
                     node.data["tool_inputs"]["file_name"] = os.path.basename(payload.file_path)
 
