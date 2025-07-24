@@ -258,6 +258,12 @@ class CrewBuilder:
                     "agent_instance": assigned_agent_instance,
                     "context_task_node_ids": context_task_node_ids,
                 }
+                try:
+                    extra_ctx_ids = ui_node.data.get("context")
+                    context_task_node_ids.extend(extra_ctx_ids)
+                    logger.info("added context")
+                except:
+                    logger.info("context not added")
 
         # Now create Task objects without context yet, so all task instances exist for context linking
         for ui_node_id, config in task_configs.items():
