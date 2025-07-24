@@ -7,6 +7,7 @@ import smtplib
 from typing import Type ,Union, Any
 from pydantic import BaseModel, Field
 import json
+from core.config import Config
 import os
 
 # Step 1: Define the input schema
@@ -28,7 +29,7 @@ class EmailSenderTool(BaseTool):
             smtp_host = settings.EMAIL_HOST
             smtp_port = settings.EMAIL_PORT
             smtp_user = settings.EMAIL_USER
-            smtp_pass = settings.EMAIL_PASS
+            smtp_pass = Config.mail_password
 
             # Build email message
             msg = MIMEText(body)

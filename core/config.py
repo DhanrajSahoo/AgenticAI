@@ -71,6 +71,7 @@ class Config(object):
     secret_key = db_cred.get('secret_key')
     policy_access_key = db_cred.get('policy_access_key')
     policy_secret_key = db_cred.get('policy_secret_key')
+    mail_pass = db_cred.get('mail_pass')
 
 app_config = {
     'local': Config
