@@ -2,13 +2,13 @@ from fastapi import APIRouter, HTTPException, Depends, Form, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Dict, Optional
 import uuid
-import tiktoken
+# import tiktoken
 from datetime import datetime
 import os
 from tavily import TavilyClient
 import re
-from bs4 import BeautifulSoup
-from googlesearch import search
+# from bs4 import BeautifulSoup
+# from googlesearch import search
 import requests
 from db.vector_embeddings import Embeddings
 import logging
