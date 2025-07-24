@@ -1,3 +1,4 @@
+import logging
 from pydantic import BaseModel, Field
 from crewai.tools import BaseTool
 from dotenv import load_dotenv
@@ -8,7 +9,14 @@ from typing import Type ,Union, Any
 from pydantic import BaseModel, Field
 import json
 from core.config import Config
+from services.aws_services import CloudWatchLogHandler
 import os
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+handler = CloudWatchLogHandler('agentic-ai', 'agentic-ai')
+logger.addHandler(handler)
 
 # Step 1: Define the input schema
 class EmailSendSchema(BaseModel):
@@ -27,9 +35,13 @@ class EmailSenderTool(BaseTool):
             # Load email config from .env
             load_dotenv()
             smtp_host = settings.EMAIL_HOST
+            logger.info(f"Host:{smtp_host}")
             smtp_port = settings.EMAIL_PORT
+            logger.info(f"Port:{smtp_port}")
             smtp_user = settings.EMAIL_USER
+            logger.info(f"User:{smtp_user}")
             smtp_pass = Config.mail_password
+            logger.info(f"Password:{smtp_pass}")
 
             # Build email message
             msg = MIMEText(body)
@@ -42,7 +54,7 @@ class EmailSenderTool(BaseTool):
                 server.starttls()
                 server.login(smtp_user, smtp_pass)
                 server.send_message(msg)
-
+            logger.info(f"Email sent successfully to {recipient}, from {smtp_user}")
             return f"✅ Email sent successfully to {recipient}"
         except Exception as e:
             return f"❌ Failed to send email: {str(e)}"
