@@ -3,7 +3,8 @@ import os
 from sqlalchemy.orm import Session
 from typing import List, Optional, Any
 import uuid
-
+import json
+import tiktoken
 from db import crud
 from schemas import workflows_schema as schema
 from .crew_builder import CrewBuilder, CrewBuilderError
@@ -162,9 +163,8 @@ def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema
         logger.info(f"error at running workflow:{e}")
 
 def run_credit_card_workflow(db: Session,data: dict = None, pdf_data: str = None):
-    workflow_id = uuid.UUID("095e3a52-85df-4037-ab04-c95dd646976d")
+    workflow_id = uuid.UUID("c3384504-c947-4721-8c8c-e1b2fd69654c")
     logger.info(f"Running workflow with workflow_id: {workflow_id}")
-
     # Retrieve the workflow from DB
     workflow = get_workflow(db, workflow_id)
     if not workflow:
@@ -212,6 +212,42 @@ def run_credit_card_workflow(db: Session,data: dict = None, pdf_data: str = None
                     f"PDF Extracted Data:\n{getattr(payload, 'pdf_data', '')}\n"
                     "\nIf the data does not match, explain what doesn't and ask user to re-apply."
                 )
+
+    builder = CrewBuilder(workflow.nodes)
+    result = builder.build_and_run(payload)
+
+    logger.info("Workflow executed successfully.")
+    return schema.WorkflowExecutionResult(
+        workflow_id=workflow_id, status="success", output=str(result)
+    )
+
+def run_data_comparison_workflow(db: Session, person_data_list: list[dict]):
+    workflow_id = uuid.UUID("202342ae-0086-49f0-8a44-2a4ab25b2ae9")
+    logger.info(f"Running workflow with workflow_id: {workflow_id}")
+
+    workflow = get_workflow(db, workflow_id)
+    if not workflow:
+        raise ValueError(f"Workflow {workflow_id} not found")
+
+    class WorkflowPayload:
+        def __init__(self, person_data):
+            self.person_data = person_data
+            self.prompt = None
+            self.file_path = None
+            self.file_name = None
+
+    payload = WorkflowPayload(person_data_list)
+
+    for node in workflow.nodes:
+        task_name = node.data.get("task_name")
+
+        if task_name == "Data comparision":
+            logger.info(f"Injecting person data into 'Data comparision' task at node {node.id}")
+            node.data.setdefault("tool_inputs", {})
+            node.data["tool_inputs"]["person_data"] = payload.person_data
+            node.data["task_description"] += (
+                f"\n\nCompare the following old and new data for each person:\n{json.dumps(payload.person_data, indent=2)}"
+            )
 
     builder = CrewBuilder(workflow.nodes)
     result = builder.build_and_run(payload)

@@ -2,12 +2,21 @@ from fastapi import APIRouter, HTTPException, Depends, Form, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Dict, Optional
 import uuid
+import tiktoken
+from datetime import datetime
+import os
+from tavily import TavilyClient
+import re
+from bs4 import BeautifulSoup
+from googlesearch import search
+import requests
 from db.vector_embeddings import Embeddings
 import logging
 import io
 from pypdf import PdfReader
 import json
 import io
+import pandas as pd
 from pypdf import PdfReader
 from schemas import workflows_schema as schema
 from services import workflow_service
@@ -189,3 +198,107 @@ async def api_run_breadusecase(
     except Exception as e:
         logger.exception("Error during workflow execution.")
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@router.post("/Default_tracker", status_code=200)
+async def api_run_Defaulterusecase(
+    username: str = Form(...),
+    user_email: str = Form(...),
+    token: str = Form(...),
+    file: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db_session)
+):
+    if not file:
+        return {"status": "error", "message": "File is required."}
+
+    logger.info("Received form.")
+    content = await file.read()
+    df = pd.read_excel(io.BytesIO(content))
+    logger.info(f"Excel data received with {len(df)} rows.")
+
+    summary = {
+        "total_contacts": len(df),
+        "changes_detected": 0,
+        "pending_notifications": 0,
+        "last_import": datetime.now().strftime("%Y-%m-%d %H:%M")
+    }
+
+    person_data_list = []
+
+    def gather_info(company: str, name: str, status: str) -> dict:
+        query = f"'{name}' '{company}' '{status}'"
+        urls = []
+        profile = {'name': name, 'company': company, 'status': status}
+        # for url in search(query):
+        #     if url.startswith("https"):
+        #         urls.append(url)
+        #     if len(urls) >= 5:
+        #         break
+        # for url in urls:
+        #     try:
+        #         r = requests.get(url, timeout=5)
+        #         soup = BeautifulSoup(r.text, 'html.parser')
+        #         data = {'url': url, 'data': []}
+        #         for p in soup.find_all('p'):
+        #             text = p.get_text(strip=True)
+        #             if text:
+        #                 clean = re.sub(r'\s+', ' ', text)
+        #                 data['data'].append(clean)
+        #         profile['url_data'].append(data)
+        #     except Exception as e:
+        #         logger.warning(f"Error scraping {url}: {e}")
+        return profile
+
+    def gather_info_tavily(company: str, name: str) -> dict:
+        try:
+            client = TavilyClient(api_key='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')
+            query = f"All professional and personal information about person {name}, who previously worked in {company}"
+            return client.search(query, search_depth="advanced", max_results=10)
+        except Exception as e:
+            logger.warning(f"Tavily error: {e}")
+            return {}
+
+    for _, row in df.iterrows():
+        name = row.get("name") or row.get("Name")
+        company = row.get("company") or row.get("Company")
+        email = row.get("email") or row.get("Email")
+        title = row.get("title") or row.get("Title", "Unknown")
+        logger.info(f"Processing: {name}, {company}, {title}")
+
+        old_data = gather_info(company, name, title)
+        new_data = gather_info_tavily(company, name)
+
+        person_data_list.append({
+            "name": name,
+            "email": email,
+            "company": company,
+            "title": title,
+            "old_data": old_data,
+            "new_data": new_data
+        })
+
+    summary["pending_notifications"] = len(person_data_list)
+
+    # Inject into the Crew workflow
+    result = workflow_service.run_data_comparison_workflow(db=db, person_data_list=person_data_list)
+    # Assuming result follows: { workflow_id, status, output, error }
+    # if result.get("status") == "success" and isinstance(result.get("output"), list):
+    #     total_contacts = len(df)
+    #     changes_detected = sum(1 for r in result["output"] if r.get("Change Type") != "No change")
+    #     pending_notifications = len(result["output"])
+
+    #     # Injecting summary data into output
+    #     result["output"] = {
+    #         "summary_data": {
+    #             "total_contacts": total_contacts,
+    #             "changes_detected": changes_detected,
+    #             "pending_notifications": pending_notifications,
+    #             "last_import": datetime.now().strftime("%Y-%m-%d %H:%M")
+    #         },
+    #         "result_data": result["output"]
+    #     }
+
+    return result
+    # return result
+
+
