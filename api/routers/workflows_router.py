@@ -279,22 +279,24 @@ async def api_run_Defaulterusecase(
 
     # Inject into the Crew workflow
     result = workflow_service.run_data_comparison_workflow(db=db, person_data_list=person_data_list)
+
+    return result
     # Assuming result follows: { workflow_id, status, output, error }
-    if result.status == "success" and result.output:
-        try:
-            output_data = json.loads(result.output)
-            return {
-               result.output
-            }
-        except Exception as e:
-                logger.error(f"Error parsing output JSON: {e}")
-                return {
-                    "status": "failed",
-                    "message": "Internal error while parsing workflow output."
-                }
-    else:
-        return {
-        "status": "failed",
-        "message": result.error or "Unknown workflow error."
-    }
+    # if result.status == "success" and result.output:
+    #     try:
+    #         output_data = json.loads(result.output)
+    #         return {
+    #            result.output
+    #         }
+    #     except Exception as e:
+    #             logger.error(f"Error parsing output JSON: {e}")
+    #             return {
+    #                 "status": "failed",
+    #                 "message": "Internal error while parsing workflow output."
+    #             }
+    # else:
+    #     return {
+    #     "status": "failed",
+    #     "message": result.error or "Unknown workflow error."
+    # }
 

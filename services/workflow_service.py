@@ -163,7 +163,7 @@ def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema
         logger.info(f"error at running workflow:{e}")
 
 def run_credit_card_workflow(db: Session,data: dict = None, pdf_data: str = None):
-    workflow_id = uuid.UUID("c3384504-c947-4721-8c8c-e1b2fd69654c")
+    workflow_id = uuid.UUID("095e3a52-85df-4037-ab04-c95dd646976d")
     logger.info(f"Running workflow with workflow_id: {workflow_id}")
     # Retrieve the workflow from DB
     workflow = get_workflow(db, workflow_id)
