@@ -214,20 +214,13 @@ async def api_run_Defaulterusecase(
     logger.info("Received form.")
     content = await file.read()
     df = pd.read_excel(io.BytesIO(content))
-    logger.info(f"Excel data received with {len(df)} rows.")
-
-    summary = {
-        "total_contacts": len(df),
-        "changes_detected": 0,
-        "pending_notifications": 0,
-        "last_import": datetime.now().strftime("%Y-%m-%d %H:%M")
-    }
+    # logger.info(f"Excel data received with {len(df)} rows.")
 
     person_data_list = []
 
     def gather_info(company: str, name: str, status: str) -> dict:
-        query = f"'{name}' '{company}' '{status}'"
-        urls = []
+        # query = f"'{name}' '{company}' '{status}'"
+        # urls = []
         profile = {'name': name, 'company': company, 'status': status}
         # for url in search(query):
         #     if url.startswith("https"):
@@ -253,19 +246,22 @@ async def api_run_Defaulterusecase(
         try:
             client = TavilyClient(api_key='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')
             query = f"All professional and personal information about person {name}, who previously worked in {company}"
-            return client.search(query, search_depth="advanced", max_results=10)
+            result = client.search(query, search_depth="advanced", max_results=10)
+            # logger.info(f"The result from Tavily is{result}")
+            return result
         except Exception as e:
             logger.warning(f"Tavily error: {e}")
             return {}
 
     for _, row in df.iterrows():
-        name = row.get("name") or row.get("Name")
-        company = row.get("company") or row.get("Company")
+        name = row.get("name") or row.get("Contact Name")
+        company = row.get("company") or row.get("Company name")
         email = row.get("email") or row.get("Email")
-        title = row.get("title") or row.get("Title", "Unknown")
-        logger.info(f"Processing: {name}, {company}, {title}")
+        title = row.get("title") or row.get("Designation", "Unknown")
+        # logger.info(f"Processing: {name}, {company}, {title}")
 
         old_data = gather_info(company, name, title)
+        # logger.info(f"The old data is{old_data}")
         new_data = gather_info_tavily(company, name)
 
         person_data_list.append({
@@ -277,28 +273,28 @@ async def api_run_Defaulterusecase(
             "new_data": new_data
         })
 
-    summary["pending_notifications"] = len(person_data_list)
+        logger.info(f"The person data list is{person_data_list}")
+
+    # summary = summary["pending_notifications"] = len(person_data_list)
 
     # Inject into the Crew workflow
     result = workflow_service.run_data_comparison_workflow(db=db, person_data_list=person_data_list)
     # Assuming result follows: { workflow_id, status, output, error }
-    # if result.get("status") == "success" and isinstance(result.get("output"), list):
-    #     total_contacts = len(df)
-    #     changes_detected = sum(1 for r in result["output"] if r.get("Change Type") != "No change")
-    #     pending_notifications = len(result["output"])
-
-    #     # Injecting summary data into output
-    #     result["output"] = {
-    #         "summary_data": {
-    #             "total_contacts": total_contacts,
-    #             "changes_detected": changes_detected,
-    #             "pending_notifications": pending_notifications,
-    #             "last_import": datetime.now().strftime("%Y-%m-%d %H:%M")
-    #         },
-    #         "result_data": result["output"]
-    #     }
-
-    return result
-    # return result
-
+    if result.status == "success" and result.output:
+        try:
+            output_data = json.loads(result.output)
+            return {
+               result.output
+            }
+        except Exception as e:
+                logger.error(f"Error parsing output JSON: {e}")
+                return {
+                    "status": "failed",
+                    "message": "Internal error while parsing workflow output."
+                }
+    else:
+        return {
+        "status": "failed",
+        "message": result.error or "Unknown workflow error."
+    }
 
