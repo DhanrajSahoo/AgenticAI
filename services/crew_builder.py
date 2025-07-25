@@ -17,7 +17,7 @@ os.environ["OPENAI_API_KEY"] = Config.openai_key
 os.environ["AWS_ACCESS_KEY_ID"] = db_cred.get("access_key")
 os.environ["AWS_SECRET_ACCESS_KEY"] = db_cred.get("secret_key")
 os.environ["AWS_REGION"] = "us-east-1"
-os.environ["SERPER_API_KEY"]
+os.environ["SERPER_API_KEY"] = Config.serper_key
 
 
 from crewai import Agent, Task, Crew, Process
@@ -106,6 +106,9 @@ class CrewBuilder:
 
                             elif tool_name == "Email Sender":
                                 tool_name = "EmailSenderTool"
+
+                            elif tool_name == "Serper Search":
+                                tool_name = "serper_dev_tool"
 
                             base = get_tool_instance(tool_name, tool_data.config_params)
                             logger.info(f"The base is{base}")

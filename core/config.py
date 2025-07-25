@@ -66,6 +66,7 @@ class Config(object):
     port = 5433
     user = 'postgres'
     password = '123#'
+    serper_key = "39d4aa3590a6e1f9535557854b55145852df2152"
     openai_key = db_cred.get('Open_AI_key_agentic')
     access_key = db_cred.get('access_key')
     secret_key = db_cred.get('secret_key')
