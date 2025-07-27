@@ -219,16 +219,13 @@ async def api_run_Defaulterusecase(
     person_data_list = []
 
     def gather_info(company: str, name: str, status: str) -> dict:
-        profile = {'name': name, 'company': company, 'status': status}
-      
-        return profile
+        return {'name': name, 'company': company, 'status': status}
 
     def gather_info_tavily(company: str, name: str) -> dict:
         try:
             client = TavilyClient(api_key='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')
             query = f"All professional and personal information about person {name}, who previously worked in {company}"
             result = client.search(query, search_depth="advanced", max_results=10)
-            # logger.info(f"The result from Tavily is{result}")
             return result
         except Exception as e:
             logger.warning(f"Tavily error: {e}")
@@ -239,10 +236,8 @@ async def api_run_Defaulterusecase(
         company = row.get("company") or row.get("Company name")
         email = row.get("email") or row.get("Email")
         title = row.get("title") or row.get("Designation", "Unknown")
-        # logger.info(f"Processing: {name}, {company}, {title}")
 
         old_data = gather_info(company, name, title)
-        # logger.info(f"The old data is{old_data}")
         new_data = gather_info_tavily(company, name)
 
         person_data_list.append({
@@ -254,16 +249,12 @@ async def api_run_Defaulterusecase(
             "new_data": new_data
         })
 
-        logger.info(f"The person data list is{person_data_list}")
-
     result = workflow_service.run_data_comparison_workflow(db=db, person_data_list=person_data_list)
 
-    # return result
-    # Assuming result follows: { workflow_id, status, output, error }
     if result.status == "success" and result.output:
         try:
             raw_output = result.output.strip()
-            cleaned_output = re.sub(r"^```json\s*|\s*```$", "", raw_output)  # handle ```json ... ``` case
+            cleaned_output = re.sub(r"^```json\s*|\s*```$", "", raw_output)
             output_data = json.loads(cleaned_output)
 
             changes_data = output_data.get("changes_data", [])
@@ -272,24 +263,27 @@ async def api_run_Defaulterusecase(
             summary_data = {
                 "total_contacts": str(total_contacts),
                 "changes_detected": str(changes_detected),
-                "pending_notifications": str(0),  # Update if dynamic logic needed
+                "pending_notifications": str(0),
                 "last_import": datetime.now().strftime("%Y-%m-%d %H:%M")
             }
+
+            # ✅ Convert `output` dict to a JSON string to match frontend expectations
+            stringified_output = json.dumps({
+                "summary_data": summary_data,
+                "changes_data": changes_data
+            })
 
             return {
                 "workflow_id": result.workflow_id,
                 "status": "success",
-                "output": {
-                    "summary_data": summary_data,
-                    "changes_data": changes_data
-                },
+                "output": stringified_output,  # ✅ frontend-compatible format
                 "error": None
             }
 
         except Exception as e:
             logger.error(f"Error parsing output JSON: {e}")
             return {
-                "workflow_id": result.get("workflow_id"),
+                "workflow_id": getattr(result, "workflow_id", None),
                 "status": "failed",
                 "output": None,
                 "error": "Internal error while parsing workflow output."
@@ -297,10 +291,11 @@ async def api_run_Defaulterusecase(
 
     else:
         return {
-            "workflow_id": result.get("workflow_id"),
+            "workflow_id": getattr(result, "workflow_id", None),
             "status": "failed",
             "output": None,
-            "error": result.get("error")
+            "error": getattr(result, "error", "Unknown error")
         }
+ 
 
 
