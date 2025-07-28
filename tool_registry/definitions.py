@@ -9,6 +9,7 @@ from tool_registry.tools.CsvSearchTool import CsvQueryTool
 from tool_registry.tools.RagTool import RAGQueryTool
 from tool_registry.tools.Fileparser import FILEReaderTool
 from tool_registry.tools.TavilyTool import TavilyQueryTool
+from tool_registry.tools.HREngageTool import HREngageTool
 
 
 PREDEFINED_TOOLS_CONFIG = {
@@ -260,6 +261,27 @@ PREDEFINED_TOOLS_CONFIG = {
                 "label": "Query",
                 "required": True,
                 "description": "what you want to know about a person"
+            }
+        }
+    },
+    "HREngageTool": {
+        "name": "HREngageTool",
+        "description": "Tool for generating an HTML newsletter from Viva Engage (Yammer) group posts and emailing it",
+        "class": HREngageTool,
+        "parameters_schema": {
+            "output_file": {
+                "type": "text",
+                "label": "Output File Name",
+                "required": False,
+                "default": "newsletter.html",
+                "description": "Name of the generated HTML file"
+            },
+            "email_to": {
+                "type": "text",
+                "label": "Recipient Email",
+                "required": False,
+                "default": "abc@apexon.com",
+                "description": "Email address to send the newsletter to"
             }
         }
     }

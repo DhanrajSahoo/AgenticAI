@@ -44,7 +44,7 @@ class EmailSenderTool(BaseTool):
             logger.info(f"Password:{smtp_pass}")
 
             # Build email message
-            msg = MIMEText(body)
+            msg = MIMEText(body,'html')
             msg["Subject"] = subject
             msg["From"] = smtp_user
             msg["To"] = recipient
