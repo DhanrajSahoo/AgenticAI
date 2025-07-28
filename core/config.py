@@ -72,7 +72,7 @@ class Config(object):
     secret_key = db_cred.get('secret_key')
     policy_access_key = db_cred.get('policy_access_key')
     policy_secret_key = db_cred.get('policy_secret_key')
-    mail_pass = decrypt_message("Z0FBQUFBQm9oMkktX2VsSDNWYmI5VVpEZDlRcUUyREdsWHZLYlRPdjVTbVVScUNfallqRU9tMDhHMDVKR0VHSlhoLXF0cE1hUmg3M2dsNHI1ZGJvR004YlZXeFYyRFgxNnc9PQ==","YUxfY0Q1cjZXeDh5LWVxWmJDNHRpd0hGYVlpUnRUX3BBMmFRc2tzTFBPST0=")
+    mail_pass = decrypt_message(db_cred.get("encrypt_msg"),db_cred.get("encrypt_key"))
 
 app_config = {
     'local': Config
