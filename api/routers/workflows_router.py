@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, Form, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Dict, Optional
 import uuid
+import time
 # import tiktoken
 from datetime import datetime
 import os
@@ -106,7 +107,9 @@ async def api_delete_workflow(
 async def api_run_workflow(payload:SemanticSearch,
         workflow_id: uuid.UUID,
         db: Session = Depends(get_db_session)
-):
+):  
+    api_hit = time.time()
+    logger.info(f"API hit at {api_hit}")
     logger.info(f"Attempting to run workflow ID: {workflow_id}")
     existing_workflow = workflow_service.get_workflow(db=db, workflow_id=workflow_id)
     if not existing_workflow:
