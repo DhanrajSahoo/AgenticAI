@@ -208,9 +208,9 @@ class CrewBuilder:
                     self.agent_node_to_instance_map[ui_node.id] = agent
         except Exception as e:
             logger.info(f"error at _instantiate_agents_with_tools {e}")
-        end_agents_w_tools - start_agents_w_tools = time.time()
+        end_agents_w_tools = time.time()
         logger.info(f"Time taken for tool-agent-instantiation {end_agents_w_tools-start_agents_w_tools}")
-        
+
     def _instantiate_tasks_and_map_agents(self) -> Dict[str, Dict[str, Any]]:
         """
         First pass: create Task instances and identify their assigned agent and raw context task IDs.
