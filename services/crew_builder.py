@@ -2,6 +2,7 @@ import logging
 from typing import List, Dict, Any, Optional, Set, Tuple
 from pydantic import ValidationError
 import os
+import time
 from fastapi import FastAPI, Depends, HTTPException,APIRouter, HTTPException
 from starlette.datastructures import State
 
@@ -78,6 +79,8 @@ class CrewBuilder:
         return None
 
     def _instantiate_agents_with_tools(self):
+        start_agents_w_tools = time.time()
+        logger.info("Inside Instantiage agent with tools:")
         try:
             logger.info("Inside the block instantiate agent with tools")
             for ui_node in self.ui_nodes:
@@ -108,10 +111,11 @@ class CrewBuilder:
                                 tool_name = "EmailSenderTool"
 
                             elif tool_name == "Serper Search":
+                                logger.info(f"Tool name is: {tool_name}")
                                 tool_name = "serper_dev_tool"
 
                             base = get_tool_instance(tool_name, tool_data.config_params)
-                            logger.info(f"The base is{base}")
+                            logger.info(f"The base is: {base}")
 
 
                             # now pull _only_ the dict under "tool_inputs"
@@ -131,8 +135,10 @@ class CrewBuilder:
                             #             tool_inputs[field] = tool_ui_node.data[field]
                             # if there really are inputs, wrap them
                             if tool_inputs:
+                                logger.info(tool_inputs)
                                 try:
                                     base = StaticInputToolWrapper(base, tool_inputs)
+                                    logger.info(f"base instance StaticInputWrapper: {base}")
                                 except Exception as e:
                                     raise CrewBuilderError(
                                         f"Failed to wrap tool '{tool_data.tool_name}' with static inputs: {e}"
@@ -202,7 +208,9 @@ class CrewBuilder:
                     self.agent_node_to_instance_map[ui_node.id] = agent
         except Exception as e:
             logger.info(f"error at _instantiate_agents_with_tools {e}")
-
+        end_agents_w_tools - start_agents_w_tools = time.time()
+        logger.info(f"Time taken for tool-agent-instantiation {end_agents_w_tools-start_agents_w_tools}")
+        
     def _instantiate_tasks_and_map_agents(self) -> Dict[str, Dict[str, Any]]:
         """
         First pass: create Task instances and identify their assigned agent and raw context task IDs.
@@ -338,6 +346,8 @@ class CrewBuilder:
                 f"Workflow has a cycle in task dependencies or invalid task structure. Could not order all tasks. Problematic task descriptions might be among: {remaining_nodes}")
 
     def _create_and_kickoff_crew(self,payload) -> Any:
+        create_and_kickoff_start_time = time.time()
+        logger.info(f"Inside Create and Kickoff & started at {create_and_kickoff_start_time}")
         if not self.crew_agents:
             return "Workflow has no agents defined. Cannot create a crew."
         if not self.ordered_crew_tasks:
@@ -366,16 +376,22 @@ class CrewBuilder:
         app.state.current_file_name = payload.file_name
 
         logger.info(f"Crew before kickoff is :{crew}")
+        create_end_time = time.time()
+        logger.info(f"The result is created in {create_end_time-create_and_kickoff_start_time}")
         result = crew.kickoff()
         if isinstance(result, str) and result.lower().startswith("i'm sorry"):
             logger.info("Detected failure in first attempt. Retrying crew execution...")
             result = crew.kickoff()
 
         logger.info(f"The result to be shown is: {result}")
+        
         return result
 
     def build_and_run(self,payload) -> Any:
+        build_and_run_start_time = time.time()
+        logger.info(f"Build and run function started at: {build_and_run_start_time}")
         try:
+            logger.info("Inside build and run... This will run CREATE&KICKOFF")
             self._instantiate_agents_with_tools()
 
             if not any(self._get_node_type(n.id) == "task" for n in self.ui_nodes):

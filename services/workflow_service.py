@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional, Any
 import uuid
 import json
+import time
 # import tiktoken
 from db import crud
 from schemas import workflows_schema as schema
@@ -103,6 +104,7 @@ def delete_workflow(db: Session, workflow_id: uuid.UUID) -> bool:
 
 def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema.WorkflowExecutionResult:
     try:
+        wf_start = time.time()
         workflow = get_workflow(db, workflow_id)
         if not workflow:
             raise ValueError(f"Workflow {workflow_id} not found")
@@ -159,8 +161,11 @@ def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema
         return schema.WorkflowExecutionResult(
             workflow_id=workflow_id, status="success", output=str(result)
         )
+        wf_end_time = time.time()
+        logger.info(f"Run Workflow Service took {wf_end_time-wf_start}")
     except Exception as e:
         logger.info(f"error at running workflow:{e}")
+    
 
 def run_credit_card_workflow(db: Session,data: dict = None, pdf_data: str = None):
     workflow_id = uuid.UUID("095e3a52-85df-4037-ab04-c95dd646976d")
