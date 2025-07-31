@@ -214,40 +214,18 @@ async def api_run_Defaulterusecase(
     logger.info("Received form.")
     content = await file.read()
     df = pd.read_excel(io.BytesIO(content))
-    # logger.info(f"Excel data received with {len(df)} rows.")
-
+    logger.info(f"Excel data received with {len(df)} rows.")
+    total_contacts = len(df)
     person_data_list = []
 
     def gather_info(company: str, name: str, status: str) -> dict:
-        # query = f"'{name}' '{company}' '{status}'"
-        # urls = []
-        profile = {'name': name, 'company': company, 'status': status}
-        # for url in search(query):
-        #     if url.startswith("https"):
-        #         urls.append(url)
-        #     if len(urls) >= 5:
-        #         break
-        # for url in urls:
-        #     try:
-        #         r = requests.get(url, timeout=5)
-        #         soup = BeautifulSoup(r.text, 'html.parser')
-        #         data = {'url': url, 'data': []}
-        #         for p in soup.find_all('p'):
-        #             text = p.get_text(strip=True)
-        #             if text:
-        #                 clean = re.sub(r'\s+', ' ', text)
-        #                 data['data'].append(clean)
-        #         profile['url_data'].append(data)
-        #     except Exception as e:
-        #         logger.warning(f"Error scraping {url}: {e}")
-        return profile
+        return {'name': name, 'company': company, 'status': status}
 
     def gather_info_tavily(company: str, name: str) -> dict:
         try:
             client = TavilyClient(api_key='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')
             query = f"All professional and personal information about person {name}, who previously worked in {company}"
             result = client.search(query, search_depth="advanced", max_results=10)
-            # logger.info(f"The result from Tavily is{result}")
             return result
         except Exception as e:
             logger.warning(f"Tavily error: {e}")
@@ -258,10 +236,8 @@ async def api_run_Defaulterusecase(
         company = row.get("company") or row.get("Company name")
         email = row.get("email") or row.get("Email")
         title = row.get("title") or row.get("Designation", "Unknown")
-        # logger.info(f"Processing: {name}, {company}, {title}")
 
         old_data = gather_info(company, name, title)
-        # logger.info(f"The old data is{old_data}")
         new_data = gather_info_tavily(company, name)
 
         person_data_list.append({
@@ -273,30 +249,53 @@ async def api_run_Defaulterusecase(
             "new_data": new_data
         })
 
-        logger.info(f"The person data list is{person_data_list}")
-
-    # summary = summary["pending_notifications"] = len(person_data_list)
-
-    # Inject into the Crew workflow
     result = workflow_service.run_data_comparison_workflow(db=db, person_data_list=person_data_list)
 
-    return result
-    # Assuming result follows: { workflow_id, status, output, error }
-    # if result.status == "success" and result.output:
-    #     try:
-    #         output_data = json.loads(result.output)
-    #         return {
-    #            result.output
-    #         }
-    #     except Exception as e:
-    #             logger.error(f"Error parsing output JSON: {e}")
-    #             return {
-    #                 "status": "failed",
-    #                 "message": "Internal error while parsing workflow output."
-    #             }
-    # else:
-    #     return {
-    #     "status": "failed",
-    #     "message": result.error or "Unknown workflow error."
-    # }
+    if result.status == "success" and result.output:
+        try:
+            raw_output = result.output.strip()
+            cleaned_output = re.sub(r"^```json\s*|\s*```$", "", raw_output)
+            output_data = json.loads(cleaned_output)
+
+            changes_data = output_data.get("changes_data", [])
+            changes_detected = sum(1 for item in changes_data if item.get("Status") == "Changed")
+
+            summary_data = {
+                "total_contacts": str(total_contacts),
+                "changes_detected": str(changes_detected),
+                "pending_notifications": str(0),
+                "last_import": datetime.now().strftime("%Y-%m-%d %H:%M")
+            }
+
+            # ✅ Convert `output` dict to a JSON string to match frontend expectations
+            stringified_output = json.dumps({
+                "summary_data": summary_data,
+                "changes_data": changes_data
+            })
+
+            return {
+                "workflow_id": result.workflow_id,
+                "status": "success",
+                "output": stringified_output,  # ✅ frontend-compatible format
+                "error": None
+            }
+
+        except Exception as e:
+            logger.error(f"Error parsing output JSON: {e}")
+            return {
+                "workflow_id": getattr(result, "workflow_id", None),
+                "status": "failed",
+                "output": None,
+                "error": "Internal error while parsing workflow output."
+            }
+
+    else:
+        return {
+            "workflow_id": getattr(result, "workflow_id", None),
+            "status": "failed",
+            "output": None,
+            "error": getattr(result, "error", "Unknown error")
+        }
+ 
+
 
