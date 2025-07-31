@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 from typing import List, Optional, Any
 import uuid
 import json
-import time
 # import tiktoken
 from db import crud
 from schemas import workflows_schema as schema
@@ -104,7 +103,6 @@ def delete_workflow(db: Session, workflow_id: uuid.UUID) -> bool:
 
 def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema.WorkflowExecutionResult:
     try:
-        wf_start = time.time()
         workflow = get_workflow(db, workflow_id)
         if not workflow:
             raise ValueError(f"Workflow {workflow_id} not found")
@@ -140,7 +138,6 @@ def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema
             elif name in ("Transcribe Audio", "TranscribeAudioTool") and payload.file_path:
                 node.data["tool_inputs"]["file_path"] = payload.file_path
 
-
             # RAG Tool
             elif name in ("RagTool", "File Query Tool"):
                 # prefer explicit file_name, else fallback to basename of file_path
@@ -161,8 +158,6 @@ def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema
         return schema.WorkflowExecutionResult(
             workflow_id=workflow_id, status="success", output=str(result)
         )
-        wf_end_time = time.time()
-        logger.info(f"Run Workflow Service took {wf_end_time-wf_start}")
     except Exception as e:
         logger.info(f"error at running workflow:{e}")
     

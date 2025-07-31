@@ -9,15 +9,23 @@ from tool_registry.tools.CsvSearchTool import CsvQueryTool
 from tool_registry.tools.RagTool import RAGQueryTool
 from tool_registry.tools.Fileparser import FILEReaderTool
 from tool_registry.tools.TavilyTool import TavilyQueryTool
+from tool_registry.tools.SerperQueryTool import SerperQueryTool
 from tool_registry.tools.HREngageTool import HREngageTool
 
 
 PREDEFINED_TOOLS_CONFIG = {
-    "serper_dev_tool": {
-        "name": "Serper Search",
+    "SerperQueryTool": {
+        "name": "Serper Search Tool",
         "description": "Tool for performing Google searches via Serper API. Requires SERPER_API_KEY environment variable.",
-        "class": SerperDevTool,
-        "parameters_schema": None
+        "class": SerperQueryTool,
+        "parameters_schema": {
+            "prompt": {
+                "type": "text",
+                "label": "Query",
+                "required": False,
+                "description": "Query to perform Google Search using Serper API."
+            }
+        }
     },
     "website_scraper": {
         "name": "Website Scraper",
