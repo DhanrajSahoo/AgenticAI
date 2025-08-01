@@ -18,8 +18,10 @@ app = FastAPI(
 
 origins = [
     "*", 
-    "https://dev3.apexon-genesys.com"
+    "https://dev3.apexon-genesys.com",
     "https://dev3.apexon-genesys.com/cc-qualifier",       # todo: change after the UI url
+    "https://dev3.agentic-ai.apexon-genesys.com",
+    "https://dev.agentic-ai.apexon-genesys.com",
 ]
 
 app.add_middleware(
