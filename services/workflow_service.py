@@ -152,6 +152,11 @@ def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema
                 logger.info(f"Injecting form data into FILEReaderTool at node {node.id}")
                 node.data["tool_inputs"]["form_data"] = payload.form_file_path
 
+            #Serper Tool
+            elif name == "Serper Search Tool":
+                logger.info(f"Injecting prompt data into Serper tool at node {node.id}")
+                node.data["tool_inputs"]["search_query"] = payload.prompt                
+
         # hand off to your builder
         builder = CrewBuilder(workflow.nodes)
         result = builder.build_and_run(payload)
