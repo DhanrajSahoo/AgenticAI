@@ -162,7 +162,7 @@ def run_workflow_service(payload, db: Session, workflow_id: uuid.UUID) -> schema
     except Exception as e:
         logger.info(f"error at running workflow:{e}")
 
-def run_credit_card_workflow(db: Session,data: dict = None, pdf_data: str = None):
+def run_credit_card_workflow(db: Session,data: dict = None):
     workflow_id = uuid.UUID("095e3a52-85df-4037-ab04-c95dd646976d")
     logger.info(f"Running workflow with workflow_id: {workflow_id}")
     # Retrieve the workflow from DB
@@ -172,14 +172,13 @@ def run_credit_card_workflow(db: Session,data: dict = None, pdf_data: str = None
 
     # Minimal payload just to satisfy the workflow structure
     class WorkflowPayload:
-        def __init__(self, form_data_json, pdf_data = None):
+        def __init__(self, form_data_json):
             self.form_data = form_data_json
-            self.pdf_data = pdf_data
             self.prompt = None
             self.file_path = None
             self.file_name = None
 
-    payload = WorkflowPayload(data or {}, pdf_data)  # Safe default
+    payload = WorkflowPayload(data)  # Safe default
     logger.info(f"The payload is{[payload]}")
     workflow = get_workflow(db, workflow_id)
     logger.info(f"The workflow is{[workflow]}")
@@ -200,18 +199,18 @@ def run_credit_card_workflow(db: Session,data: dict = None, pdf_data: str = None
                     f"\n\nUser Form Data:\n{payload.form_data}\n"
                 )
 
-            elif task_name == "Data validator":
-                logger.info(f"Injecting both form and PDF data into 'Data validator' task at node {node.id}")
-                node.data.setdefault("tool_inputs", {})
-                node.data["tool_inputs"]["form_data"] = payload.form_data
-                node.data["tool_inputs"]["pdf_data"] = getattr(payload, "pdf_data", "")
+            # elif task_name == "Data validator":
+            #     logger.info(f"Injecting both form and PDF data into 'Data validator' task at node {node.id}")
+            #     node.data.setdefault("tool_inputs", {})
+            #     node.data["tool_inputs"]["form_data"] = payload.form_data
+            #     node.data["tool_inputs"]["pdf_data"] = getattr(payload, "pdf_data", "")
 
-                node.data["task_description"] += (
-                    "\n\nCompare the following data:\n"
-                    f"Form Data (user-submitted):\n{payload.form_data}\n\n"
-                    f"PDF Extracted Data:\n{getattr(payload, 'pdf_data', '')}\n"
-                    "\nIf the data does not match, explain what doesn't and ask user to re-apply."
-                )
+            #     node.data["task_description"] += (
+            #         "\n\nCompare the following data:\n"
+            #         f"Form Data (user-submitted):\n{payload.form_data}\n\n"
+            #         f"PDF Extracted Data:\n{getattr(payload, 'pdf_data', '')}\n"
+            #         "\nIf the data does not match, explain what doesn't and ask user to re-apply."
+            #     )
 
     builder = CrewBuilder(workflow.nodes)
     result = builder.build_and_run(payload)
@@ -222,7 +221,7 @@ def run_credit_card_workflow(db: Session,data: dict = None, pdf_data: str = None
     )
 
 def run_data_comparison_workflow(db: Session, person_data_list: list[dict]):
-    workflow_id = uuid.UUID("202342ae-0086-49f0-8a44-2a4ab25b2ae9")
+    workflow_id = uuid.UUID("893aec9e-de94-4fcb-955f-fd4f738c8d0d")
     logger.info(f"Running workflow with workflow_id: {workflow_id}")
 
     workflow = get_workflow(db, workflow_id)
@@ -257,3 +256,10 @@ def run_data_comparison_workflow(db: Session, person_data_list: list[dict]):
         workflow_id=workflow_id, status="success", output=str(result)
     )
 
+def compare_fields(existing_data: dict, current_data: dict) -> str:
+    changes = []
+    for key, old_value in existing_data.items():
+        new_value = current_data.get(key)
+        if old_value != new_value:
+            changes.append(f"{key} changed: '{old_value}' → '{new_value}'")
+    return "; ".join(changes) if changes else "No changes"

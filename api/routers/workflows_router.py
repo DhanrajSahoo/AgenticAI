@@ -38,7 +38,6 @@ router = APIRouter(
 )
 
 
-
 @router.post("/", response_model=schema.WorkflowResponse, status_code=201)
 async def api_create_workflow(
         payload: schema.WorkflowCreatePayload,
@@ -156,7 +155,14 @@ async def api_run_breadusecase(
 ):
     logger.info("Received form submission.")
 
-   
+    # Read and extract text from PDF
+    file_content = files.file.read()
+    pdf_stream = io.BytesIO(file_content)
+    reader = PdfReader(pdf_stream)
+    pdf_text = "\n".join(page.extract_text() or "" for page in reader.pages)
+    # pdf_text_lower = pdf_text.lower()
+
+    # Construct form data for workflow later
     form_data = {
         "full_name": full_name,
         "date_of_birth": date_of_birth,
@@ -167,33 +173,64 @@ async def api_run_breadusecase(
         "employment_status": employment_status,
         "income": annual_income,
         "monthly_debt_payments": monthly_debt_payments,
-        "monthly_housing_payment":monthly_housing_payment,
-        "Credit_Score":credit_score,
-        "Total_credit_used":total_credit_used,
-        "Total_credit_Limit":total_credit_limit,
-        "Deliquencies":deliquencies,
-        "Bankrupties":bankrupties,
-        "city":city,
-        "state":state,
-        "zip_code":zip_code,
-        "residential_status":residential_status,
-        "current_address_length":current_address_length,
+        "monthly_housing_payment": monthly_housing_payment,
+        "Credit_Score": credit_score,
+        "Total_credit_used": total_credit_used,
+        "Total_credit_Limit": total_credit_limit,
+        "Deliquencies": deliquencies,
+        "Bankrupties": bankrupties,
+        "city": city,
+        "state": state,
+        "zip_code": zip_code,
+        "residential_status": residential_status,
+        "current_address_length": current_address_length,
     }
-    file_content = files.file.read()  # Read file content as bytes
-    pdf_stream = io.BytesIO(file_content)  # Wrap in a binary stream
-    reader = PdfReader(pdf_stream)  # Use PyPDF reader
 
-    pdf_text = "\n".join(page.extract_text() or "" for page in reader.pages)
+    def field_in_pdf(pdf_text: str, value: str, possible_labels: list) -> bool:
+        """
+        Check if the value is present near any of the possible field labels in the pdf_text.
+        """
+        text = pdf_text.lower()
+        value = value.lower().strip()
 
+        for label in possible_labels:
+            pattern = rf"{label}[^a-zA-Z0-9]{{0,10}}{re.escape(value)}"
+            if re.search(pattern, text):
+                return True
+        return False
+    # 🔍 Manual Validation (can be enhanced with fuzzy matching, NLP, etc.)
+    mismatches = []
 
-    logger.info(f"validation data is:{pdf_text}")
+    if not field_in_pdf(pdf_text, full_name, ["name", "full name", "firstname", "applicant name"]):
+        mismatches.append("full_name")
+
+    if not field_in_pdf(pdf_text, date_of_birth, ["dob", "date of birth", "birth date"]):
+        mismatches.append("date_of_birth")
+
+    if not field_in_pdf(pdf_text, social_security_number, ["ssn", "social security number", "social_security_number"]):
+        mismatches.append("ssn")
+
+    # Optional address check (simple)
+    # address_check = f"{street_no} {city}".lower()
+    # if address_check not in pdf_text.lower().replace("\n", " "):
+    #     mismatches.append("address")
+
+    if mismatches:
+        logger.warning(f"Form and document mismatch in fields: {mismatches}")
+        return {
+            "Workflow_id": "095e3a52-85df-4037-ab04-c95dd646976d",
+            "status":"success",
+            "output": f"Validation failed. The {', '.join(mismatches)} fields do not match the uploaded document.",
+            "error": "null"
+        }
+
+    logger.info(f"PDF Validation Passed. Extracted PDF data: {pdf_text}")
     logger.info(f"Form Data Received: {form_data}")
+    
     form_data_json = json.dumps(form_data)
-    # Identity_proof = file.
+
     try:
-        logger.info("Running workflow with DB-stored payload (ignoring form data for now).")
-        # ✅ Currently we ignore form_data in workflow run, but keep it available here
-        result = workflow_service.run_credit_card_workflow(data=form_data_json,pdf_data=pdf_text, db=db)
+        result = workflow_service.run_credit_card_workflow(data=form_data_json, db=db)
         return result
     except Exception as e:
         logger.exception("Error during workflow execution.")
@@ -260,6 +297,42 @@ async def api_run_Defaulterusecase(
             changes_data = output_data.get("changes_data", [])
             changes_detected = sum(1 for item in changes_data if item.get("Status") == "Changed")
 
+            # Add a column to original DataFrame for 'Detected Changes'
+            df["Detected Changes"] = ""
+
+            for item in changes_data:
+                name = item.get("Contact Name") or item.get("Name")
+                company = item.get("Company name") or item.get("company") or item.get("Company")
+                title = item.get("Title") or item.get("Designation")
+                status = item.get("Status")
+
+                # Match the row in original Excel using 'name'
+                row_match = df[df["Contact Name"] == name]
+                if not row_match.empty:
+                    idx = row_match.index[0]
+
+                    # Reconstruct the old/new data from existing and updated fields
+                    old_data = {
+                        "Company name": df.at[idx, "Company name"],
+                        "Designation": df.at[idx, "Designation"]
+                    }
+                    new_data = {
+                        "Company name": company,
+                        "Designation": title
+                    }
+
+                    # Compare fields
+                    detected_change = workflow_service.compare_fields(old_data, new_data)
+                    # Update actual fields if changed
+                    if "Company name" in detected_change:
+                        df.at[idx, "Company name"] = new_data.get("Company name", row["Company name"])
+                    if "Designation" in detected_change:
+                        df.at[idx, "Designation"] = new_data.get("Designation", row["Designation"])
+
+
+                    # Update the Excel DataFrame
+                    df.at[idx, "Detected Changes"] = detected_change
+
             summary_data = {
                 "total_contacts": str(total_contacts),
                 "changes_detected": str(changes_detected),
@@ -272,7 +345,7 @@ async def api_run_Defaulterusecase(
                 "summary_data": summary_data,
                 "changes_data": changes_data
             })
-
+            print(df[["Contact Name", "Company name", "Designation", "Detected Changes"]].to_string(index=False))
             return {
                 "workflow_id": result.workflow_id,
                 "status": "success",
