@@ -221,7 +221,7 @@ def run_credit_card_workflow(db: Session,data: dict = None):
     )
 
 def run_data_comparison_workflow(db: Session, person_data_list: list[dict]):
-    workflow_id = uuid.UUID("893aec9e-de94-4fcb-955f-fd4f738c8d0d")
+    workflow_id = uuid.UUID("202342ae-0086-49f0-8a44-2a4ab25b2ae9")
     logger.info(f"Running workflow with workflow_id: {workflow_id}")
 
     workflow = get_workflow(db, workflow_id)
@@ -255,11 +255,3 @@ def run_data_comparison_workflow(db: Session, person_data_list: list[dict]):
     return schema.WorkflowExecutionResult(
         workflow_id=workflow_id, status="success", output=str(result)
     )
-
-def compare_fields(existing_data: dict, current_data: dict) -> str:
-    changes = []
-    for key, old_value in existing_data.items():
-        new_value = current_data.get(key)
-        if old_value != new_value:
-            changes.append(f"{key} changed: '{old_value}' → '{new_value}'")
-    return "; ".join(changes) if changes else "No changes"

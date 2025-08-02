@@ -297,42 +297,6 @@ async def api_run_Defaulterusecase(
             changes_data = output_data.get("changes_data", [])
             changes_detected = sum(1 for item in changes_data if item.get("Status") == "Changed")
 
-            # Add a column to original DataFrame for 'Detected Changes'
-            df["Detected Changes"] = ""
-
-            for item in changes_data:
-                name = item.get("Contact Name") or item.get("Name")
-                company = item.get("Company name") or item.get("company") or item.get("Company")
-                title = item.get("Title") or item.get("Designation")
-                status = item.get("Status")
-
-                # Match the row in original Excel using 'name'
-                row_match = df[df["Contact Name"] == name]
-                if not row_match.empty:
-                    idx = row_match.index[0]
-
-                    # Reconstruct the old/new data from existing and updated fields
-                    old_data = {
-                        "Company name": df.at[idx, "Company name"],
-                        "Designation": df.at[idx, "Designation"]
-                    }
-                    new_data = {
-                        "Company name": company,
-                        "Designation": title
-                    }
-
-                    # Compare fields
-                    detected_change = workflow_service.compare_fields(old_data, new_data)
-                    # Update actual fields if changed
-                    if "Company name" in detected_change:
-                        df.at[idx, "Company name"] = new_data.get("Company name", row["Company name"])
-                    if "Designation" in detected_change:
-                        df.at[idx, "Designation"] = new_data.get("Designation", row["Designation"])
-
-
-                    # Update the Excel DataFrame
-                    df.at[idx, "Detected Changes"] = detected_change
-
             summary_data = {
                 "total_contacts": str(total_contacts),
                 "changes_detected": str(changes_detected),
@@ -345,7 +309,7 @@ async def api_run_Defaulterusecase(
                 "summary_data": summary_data,
                 "changes_data": changes_data
             })
-            print(df[["Contact Name", "Company name", "Designation", "Detected Changes"]].to_string(index=False))
+
             return {
                 "workflow_id": result.workflow_id,
                 "status": "success",
